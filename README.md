@@ -1,8 +1,8 @@
 # Student success analysis
 
-**Tidyverse is core package for wrangling, filtering, visualizing and processing data.**
+**❗Tidyverse is core package for wrangling, filtering, visualizing and processing data. ❗**
 
-# Directory structure
+# 📁 Directory structure
 
 ### src
 All files related to R including the dataset
@@ -16,18 +16,18 @@ Tidyverse cheat sheets in pdf format
 ### auditorne
 helpful reference to already existing problems and their solutions
 
-# Setup notes
-## 1. Installation
+# ⚙️ Setup notes
+## ⬇️ Installation
 Installation links:
 
 - https://www.rstudio.com/products/rstudio/download/
 - https://cran.r-project.org/bin/windows/base/
 
 Linux - R installation (tidyverse requires these dependencies):
-```
-sudo apt-get install r-cran-curl r-cran-openssl r-cran-xml2 libxml2-dev
-```
-## 2. R packets
+- ``` 
+  sudo apt-get install r-cran-curl r-cran-openssl r-cran-xml2 libxml2-dev
+  ```
+## 📦 R packets
 1. Open RStudio -> Open Project -> student-success-analysis **.Rproj**
 2. File called student-success-analysis **.Rmd** should open up, 
     - if it didn't open: navigate to it using the bottom right panel "Files" and double click the file
@@ -35,7 +35,7 @@ sudo apt-get install r-cran-curl r-cran-openssl r-cran-xml2 libxml2-dev
 4. Popup will open asking you to install the packets, press yes. This took me **20 minutes**
 
 
-# Todo:
+# 📋 Todo:
 
 - [x] Loading the dataset
 - [x] Describing the dataset
