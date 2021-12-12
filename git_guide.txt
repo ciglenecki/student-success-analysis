@@ -1,0 +1,40 @@
+Main je branch na koji pazimo, biti će čist i na njega dodajemo stvari koje uvijek rade!
+
+"Kreiranje novog brancha"
+git checkout -b titula
+git push --set-upstream origin titula
+git push
+
+"Želim povući nove stvari sa glavnog brancha (main) na svoj branch tako da imam te nove stvari ali da mi stvari na mom branchu ostanu"
+git pull # povlacim sve nove promjene sa svih brancheva, još bitnije, povukao sam promjene sa grane main gdje možda imam neke nove pametne stvari koje mi trebaju
+git checkout titula # vracam se u svoj branch. Čak i ako jesam u svom branchu bolje je da se probam checkoutati u nju da nisam slučajno u nekom krivom branchu!
+git merge main # Mergarm branch main U SEBE (main -> titula). Sve nove stvari koje su došle na main su sad u mom branchu. Dakle imam svoje stvari koje sam imao i prije ali sad imam i najnovije stvari sa maina.
+
+# ako imam conflicft: 
+	# moguće je da se promjenio isti file na kojem ja sad radim i da su u konfliku. Npr. ako ja imam nesto svoje na liniji 83 a on želi ubaciti neki svoj kod na liniju 83. Taj konflikt treba riješiti. konflikt izgleda ovako
+
+	# error: The following untracked working tree files would be overwritten by merge:
+	#         text.txt
+	# Please move or remove them before you merge.
+	# Aborting
+
+	# konflikt moram rješiti -- ručno otići u file i na mjestima gdje imam <<<<<<<, ======= ili >>>>>>> maknuti to sve
+	# kod na kraju rješavanj konflikta mora imati smisla i izgledati kao normalan kod
+	# nebitno -- rjesavanje konflikta je moguce rjesititi uz pomocni tool npr vscode
+
+# sad kad sam rjesio conflict (siguran sam da mi fileovi izgledaju dobro i da sve radi):
+	git add . # dodajem taj file ili njih vise za koje sam upravo rjesio conflict
+	git status # provjeri da sam dodao sve fileove koje sam promjenio (sve mora biti zeleno)
+	git commit # može i git commit -m 'rejsio sam conflict', on ce vam ovako staviti default message
+	git push
+
+"Dodavanje novih filova"
+git status # prvo provjeri na kojoj sam grani, da nisam slučajno u krivoj, npr "main". Moram biti u titula
+git add . # dodaj sve nove promjene
+git status # provjeri jesu li svi novi fileovi dodani zeleni, ako su crveni onda nisu dodani
+git commit -m 'add super funkcija' # napravi commit
+git push # pushat to sve na github
+
+"Brisanje fileova"
+# izbriši ručno file
+# ponovi korak "Dodavanje novih filove"
