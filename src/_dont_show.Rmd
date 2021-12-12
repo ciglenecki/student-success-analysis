@@ -1,0 +1,456 @@
+---
+title: "Uspjeh učenika na ispitima"
+author: "Filip Wolf, Borna Katović, Uršula Radić"
+output:
+  word_document: default
+  pdf_document: default
+  html_notebook: default
+---
+Učitavanje dataseta, uklanjanje neispravnih podataka, faktorizacija kategorijskih varijabli
+```{r}
+#učitavanje potrebnih library-a i dataseta
+library(car)
+library(varhandle)
+library(dplyr)
+library(tidyverse)
+library(stringr)
+data <-read_csv("uspjehDataset.csv")
+
+#zbog lakšeg rukovanja varijablama uklonili smo razmake u imenima varijabli
+names(data)<-str_replace_all(names(data), c(" " = "." , "," = "" ))
+#uklanjanje neispravnih podataka
+#uklonjeni su svi redovi koji imaju neispravne vrijednosti za rezultate ispita; rezultati s brojem bodova većim od 100 i manjim od 0
+data <- na.omit(data)
+data <- filter(data, reading.score<=100 & writing.score<=100 & math.score<=100 & 
+                   reading.score>=0 & writing.score>= 0 & math.score>=0)
+data$test.preparation.course = factor(data$test.preparation.course)
+data$parental.level.of.education=factor(data$parental.level.of.education)
+# ako napravimo faktorizaciju na sljedeci nacin, promijeni se summary regresije:
+# data$parental.level.of.education = factor(
+#   data$parental.level.of.education,
+#   ordered=TRUE,
+#   levels = c(
+#     "some high school",
+#     "high school",
+#     "some college",
+#     "associate's degree",
+#     "bachelor's degree",
+#     "master's degree"
+#   )
+# )
+data$lunch=factor(data$lunch)
+data$`race/ethnicity`=factor(data$`race/ethnicity`)
+data$gender=factor(data$gender)
+```
+
+Crtanje histograma, provjera normalnosti ciljnih varijabli
+```{r}
+#math score
+qqnorm(data$math.score)
+hist(data$math.score, breaks = 25, main = "histogram", xlab = "bodovi", ylab = "relative frequency")
+#reading score
+qqnorm(data$reading.score)
+hist(data$reading.score, breaks = 25, main = "histogram", xlab = "bodovi", ylab = "relative frequency")
+#writing score
+qqnorm(data$writing.score)
+hist(data$writing.score, breaks = 25, main = "histogram", xlab = "bodovi", ylab = "relative frequency")
+
+#Sve tri ciljne varijable zadovoljavaju pretpostavku o normalnosti- distubucija populacije nije previše zakrivljena; možemo normalno koristiti testove koji pretpostavljaju normalnost podataka.
+```
+
+Race/ethnicity testovi - var.test i t.test
+```{r}
+#Prije postavljanja hipoteza i provođenja testova boxplot-om smo prikazali srednje vrijednosti ciljnih varijabli te smo na temelju uočenih razlika u srednjim vrijednostima oblikovali testove.
+#Temeljem rezultata var.testa postavljamo vrijednost argumenta var.equal u t.testu.
+#Prag za p-vrijednost: 5%.
+#Prag za značajniju razliku između rezultata: 5 bodova.
+
+#math score
+#prikaz srednjih vrijednosti boxplotom
+boxplot(data$math.score[data$`race/ethnicity` == "group A"], data$math.score[data$`race/ethnicity` == "group B"], data$math.score[data$`race/ethnicity` == "group C"], data$math.score[data$`race/ethnicity` == "group D"], data$math.score[data$`race/ethnicity` == "group E"], names = c("A", "B", "C", "D", "E"))
+#testiranje grupa s najvećom uočenom razlikom
+var.test(data$math.score[data$`race/ethnicity` == "group A"], data$math.score[data$`race/ethnicity` == "group E"])
+t.test(data$math.score[data$`race/ethnicity` == "group E"], data$math.score[data$`race/ethnicity` == "group A"], alt = "greater", var.equal = TRUE, mu = 5)
+
+#reading score
+#prikaz podataka boxplotom
+boxplot(data$reading.score[data$`race/ethnicity` == "group A"], data$reading.score[data$`race/ethnicity` == "group B"], data$reading.score[data$`race/ethnicity` == "group C"], data$reading.score[data$`race/ethnicity` == "group D"], data$reading.score[data$`race/ethnicity` == "group E"], names = c("A", "B", "C", "D", "E"))
+#testiranje grupa s navjećom razlikom
+var.test(data$reading.score[data$`race/ethnicity` == "group A"], data$reading.score[data$`race/ethnicity` == "group E"])
+t.test(data$reading.score[data$`race/ethnicity` == "group E"], data$reading.score[data$`race/ethnicity` == "group A"], alt = "greater", var.equal = TRUE, mu=5)
+#nulta hipoteza nije opovrgnuta- postavljanje t.testa bez praga
+t.test(data$reading.score[data$`race/ethnicity` == "group E"], data$reading.score[data$`race/ethnicity` == "group A"], alt = "greater", var.equal = TRUE)
+
+
+#writing score
+#prikaz podataka boxplotom
+boxplot(data$writing.score[data$`race/ethnicity` == "group A"], data$writing.score[data$`race/ethnicity` == "group B"], data$writing.score[data$`race/ethnicity` == "group C"], data$writing.score[data$`race/ethnicity` == "group D"], data$writing.score[data$`race/ethnicity` == "group E"], names = c("A", "B", "C", "D", "E"))
+#testiranje grupa s najvećom razlikom
+var.test(data$writing.score[data$`race/ethnicity` == "group A"], data$writing.score[data$`race/ethnicity` == "group E"])
+t.test(data$writing.score[data$`race/ethnicity` == "group E"], data$writing.score[data$`race/ethnicity` == "group A"], alt = "greater", var.equal = TRUE, mu = 5)
+```
+
+Zaključak - race\ethnicity - var.test i t.test 
+
+Temeljem provedenih testova možemo zaključiti da pripadnici grupe E imaju značajno veći prosječan broj bodova (razlika u srednjim vrijedostima veća od 5 bodova) od pripadnika grupe A u ispitima iz matematike i pisanja. Iako T-test iz čitanja ne ukazuje razliku jednako velikih proporcija(>=5 bodova), drugim t.testom opovrgnuta je nulta hipoteza što ukazuje na bolji uspjeh pripradnika skupine E.
+
+
+Test nezavisnosti - Race/ethnicity
+```{r}
+#race/ethnicity(sve kategorije) i test preparation course
+tbl = table(data$`race/ethnicity`, data$test.preparation.course)
+print(addmargins(tbl))
+chisq.test(tbl,correct=F)
+
+#race/ethnicity(sve kategorije) i lunch
+tbl = table(data$`race/ethnicity`, data$lunch)
+print(addmargins(tbl))
+chisq.test(tbl,correct=F)
+
+#race i education
+tbl = table(data$`race/ethnicity`, data$parental.level.of.education)
+print(addmargins(tbl))
+chisq.test(tbl,correct=F)
+
+#race/ethnicity (grupe A i E) i test preparation course
+data1 = data %>% filter(data$`race/ethnicity` == "group A" | data$`race/ethnicity` == "group E")
+data1$`race/ethnicity`= unfactor(data1$`race/ethnicity`)
+tbl = table(data1$`race/ethnicity`, data1$test.preparation.course)
+print(addmargins(tbl))
+chisq.test(tbl,correct=F)
+
+#race/ethnicity (grupe A i E) i test preparation course
+data1 = data %>% filter(data$`race/ethnicity` == "group A" | data$`race/ethnicity` == "group E")
+data1$`race/ethnicity`= unfactor(data1$`race/ethnicity`)
+tbl = table(data1$`race/ethnicity`, data1$lunch)
+print(addmargins(tbl))
+chisq.test(tbl,correct=F)
+
+```
+Zaključak - race\ethnicity - test nezavisnosti
+
+Većina provedenih testova nije uspijela dokazati postojanje ovisnosti između varijable race\ethnicity i  navedenih varijabli.
+
+
+Varijabla gender - var.test i t.test
+```{r}
+#math score
+#prikaz srednjih vrijednosti boxplotom
+boxplot(data$math.score[data$gender=="male"], data$math.score[data$gender=="female"], names = c("male", "female"))
+#testovi
+var.test(data$math.score[data$gender=="male"], data$math.score[data$gender=="female"])
+t.test(data$math.score[data$gender=="male"], data$math.score[data$gender=="female"], alt = "greater", var.equal = TRUE, mu = 5)
+#t.test bez praga
+t.test(data$math.score[data$gender=="male"], data$math.score[data$gender=="female"], alt = "greater", var.equal = TRUE)
+
+#reading score
+#prikaz srednjih vrijednosti boxplotom
+boxplot(data$reading.score[data$gender=="male"], data$reading.score[data$gender=="female"], names = c("male", "female"))
+#testovi
+var.test(data$reading.score[data$gender=="male"], data$reading.score[data$gender=="female"])
+t.test(data$reading.score[data$gender=="female"], data$reading.score[data$gender=="male"], alt = "greater", var.equal = TRUE, mu = 5)
+
+#writing score
+#prikaz srednjih vrijednosti boxplotom
+boxplot(data$writing.score[data$gender=="male"], data$writing.score[data$gender=="female"], names = c("male", "female"))
+#testovi
+var.test(data$writing.score[data$gender=="male"], data$writing.score[data$gender=="female"])
+t.test(data$writing.score[data$gender=="female"], data$writing.score[data$gender=="male"], alt = "greater", var.equal = TRUE, mu = 5)
+```
+Zaključak - gender - var.test i t.test
+
+Provedeni testovi ukazuju na postojanje značajne razlike u srednjim vrijednostima(>=5 bodova)rezultata iz čitanja i pisanja ovisno o spolu. Djevojčice imaju značajno veću srednju vrijednost rezultata u ispitima iz čitanja i pisanja. Iako nije dokazano postojanje razlike tih proporcija između dječaka i djevojčica na ispitu iz matematike, proveden t.test bez praga ukazuje na to da je srednja vrijednost rezultata iz matematike kod dječaka veća nego kod djevočica.
+
+
+Test nezavisnosti - gender
+```{r}
+#gender i test preparation course
+tbl = table(data$gender, data$test.preparation.course)
+print(addmargins(tbl))
+chisq.test(tbl,correct=F)
+
+#gender i race/ethnicity
+tbl = table(data$gender, data$`race/ethnicity`)
+print(addmargins(tbl))
+chisq.test(tbl,correct=F)
+
+#gender i lunch
+tbl = table(data$gender, data$lunch)
+print(addmargins(tbl))
+chisq.test(tbl,correct=F)
+
+#gender i parental level of education
+tbl = table(data$gender, data$parental.level.of.education)
+print(addmargins(tbl))
+chisq.test(tbl,correct=F)
+```
+Zaključak - gender - test nezavisnosti
+
+Provedeni testovi ne ukazuju na ikakvo postojanje ovisnosti između varijable gender i preostalih kateogrijskih varijabli. 
+
+
+Parental level of education - var.test i t.test
+```{r}
+#za provođenje testova uzeli smo skupine s najizražajnijom razlikom u srednjim vrijednostima
+
+#math score
+#prikaz srednjih vrijednosti boxplotom
+boxplot(data$math.score[data$parental.level.of.education=="some high school"], data$math.score[data$parental.level.of.education=="high school"], data$math.score[data$parental.level.of.education=="some college"], data$math.score[data$parental.level.of.education=="associate's degree"], data$math.score[data$parental.level.of.education=="bachelor's degree"], data$math.score[data$parental.level.of.education=="master's degree"], names = c("SHS", "HS", "SC", "AD", "BD", "MS"))
+#testovi između skupina s najvećom razlikom
+var.test(data$math.score[data$parental.level.of.education=="high school"], data$math.score[data$parental.level.of.education=="master's degree"])
+t.test(data$math.score[data$parental.level.of.education=="master's degree"], data$math.score[data$parental.level.of.education=="high school"], alt = "greater", var.equal = TRUE, mu = 5)
+#t.test bez praga
+t.test(data$math.score[data$parental.level.of.education=="master's degree"], data$math.score[data$parental.level.of.education=="high school"], alt = "greater", var.equal = TRUE)
+
+
+#reading score
+#prikaz srednjih vrijednosti boxplotom
+boxplot(data$reading.score[data$parental.level.of.education=="some high school"], data$reading.score[data$parental.level.of.education=="high school"], data$reading.score[data$parental.level.of.education=="some college"], data$reading.score[data$parental.level.of.education=="associate's degree"], data$reading.score[data$parental.level.of.education=="bachelor's degree"], data$reading.score[data$parental.level.of.education=="master's degree"], names = c("SHS", "HS", "SC", "AD", "BD", "MS"))
+#testovi između skupina s najvećom razlikom
+var.test(data$reading.score[data$parental.level.of.education=="high school"], data$reading.score[data$parental.level.of.education=="master's degree"])
+t.test(data$reading.score[data$parental.level.of.education=="master's degree"], data$reading.score[data$parental.level.of.education=="high school"], alt = "greater", var.equal = TRUE, mu = 5)
+
+#writing score
+#prikaz srednjih vrijednosti boxplotom
+boxplot(data$writing.score[data$parental.level.of.education=="some high school"], data$writing.score[data$parental.level.of.education=="high school"], data$writing.score[data$parental.level.of.education=="some college"], data$writing.score[data$parental.level.of.education=="associate's degree"], data$writing.score[data$parental.level.of.education=="bachelor's degree"], data$writing.score[data$parental.level.of.education=="master's degree"], names = c("SHS", "HS", "SC", "AD", "BD", "MS"))
+#testovi između skupina s najvećom razlikom
+var.test(data$writing.score[data$parental.level.of.education=="high school"], data$writing.score[data$parental.level.of.education=="master's degree"])
+t.test(data$writing.score[data$parental.level.of.education=="master's degree"], data$writing.score[data$parental.level.of.education=="high school"], alt = "greater", var.equal = TRUE, mu = 5)
+```
+Zaključak - parental level of eduaction - var.test i t.test
+
+Provedeni testovi ukazuju na postojanje razlike u srednjim vrijednostima između učenika ovisno o razini školovanja njihovih roditelja. Prosječan broj bodova iz čitanja i pisanja značajno je veći(>=5 bodova) kod učenika čiji roditelji imaju magisterij u odnosu na učenike čiji roditelji imaju završenu srednju školu. Kod ispita iz matematike ne postoji razlika takvih proporcija, ali t.test bez praga ukazuje na veći prosječan broj bodova iz matematike kod učenika čiji roditelji imaju magisterij.
+
+
+Test nezavisnosti - parental level of eduaction
+```{r}
+#test preparation course
+data1 = data %>% filter(parental.level.of.education=="high school" | parental.level.of.education=="master's degree")
+data1$parental.level.of.education=unfactor(data1$parental.level.of.education)
+tbl = table(data1$parental.level.of.education, data1$test.preparation.course)
+print(addmargins(tbl))
+chisq.test(tbl,correct=F)
+
+#race\ethnicity
+tbl = table(data1$parental.level.of.education, data1$`race/ethnicity`)
+print(addmargins(tbl))
+chisq.test(tbl,correct=F)
+#tocnost chi-squared testa je upitna-provodimo fisher-irwinov test
+fisher.test(tbl)
+
+#rece\ethnicity -group A i group E
+data1 = data %>%  filter(`race/ethnicity`=="group A" | `race/ethnicity`=="group E")
+data1$`race/ethnicity`=unfactor(data1$`race/ethnicity`)
+tbl = table(data1$parental.level.of.education, data1$`race/ethnicity`)
+print(addmargins(tbl))
+chisq.test(tbl,correct=F)
+#tocnost chi-squared testa je upitna-provodimo fisher-irwinov test
+fisher.test(tbl)
+
+```
+Zaključak - parental level of education - test nezavisnosti 
+
+Testovi nezavisnosti ukazuju na postojanje ovisnosti između varijable parental level of eduaction i rasnih skupina group A i group E, kao i između obrazovnih skupina high school i master's degree i varijable race\ethnicity.
+
+
+Lunch - var.test i t.test
+```{r}
+#Iako značenje varijable lunch nije eksplicitno navedeno, mi smo ju odlučili koristiti pod pretpostavkom da ukazuje na pristustvo financijskih olakšica za učenike iz obitelji koje su lošijeg imovinskog stanja.
+table(data$lunch)
+freered=data %>% filter(lunch!="standard")
+standard=data %>% filter(lunch=="standard")
+
+#boxplot
+boxplot(freered$`math.score`, standard$`math.score`, names=c("free/reduced", "lunch"))
+boxplot(freered$`reading.score`, standard$`reading.score`, names=c("free/reduced", "lunch"))
+boxplot(freered$writing.score, standard$`writing.score`,  names=c("free/reduced", "lunch"))
+
+#testranje varijance
+var.test(freered$`math.score`, standard$`math.score`)
+var.test(freered$`reading.score`, standard$`reading.score`)
+var.test(freered$`writing.score`, standard$`writing.score`)
+
+#t testovi
+t.test(standard$`math.score`, freered$`math.score`, alternative = "greater", var.equal =F,  mu=5)
+t.test(standard$`reading.score`, freered$`reading.score`, alternative = "greater", var.equal = T, mu=5)
+t.test(standard$`writing.score`, freered$`writing.score`, alternative = "greater", var.equal = T, mu=5)
+```
+Zaključak - lunch - var.test i t.test
+
+Svi provedeni testovi ukazuju na značajnu razliku između prosječnog broja bodova na ispitima ovisno o cijeni ručka. Na sva tri ispita, prosječan broj bodova učenika koji imaju standardnu cijenu ručka značajno je veći (>=5 bodova) od prosječnog broja bodova učenika sa smanjenom cijenom ručka.
+
+
+Test nezavisnosti - varijabla lunch
+```{r}
+#test preparation course
+rucaktecaj = table(data$test.preparation.course, data$lunch)
+print(rucaktecaj)
+chisq.test(rucaktecaj, correct = F)
+
+#parental level of education
+rucakparent=table(data$parental.level.of.education, data$lunch)
+print(rucakparent)
+chisq.test(rucakparent, correct = F)
+```
+Zaključak - test preparation course - lunch
+
+Provedeni testovi nezavisnosti ne ukazuju na postojanje ovisnosti između navedenih varijabli.
+
+
+Test preparation score testovi
+```{r}
+#boxplot
+boxplot(
+  data$math.score[data$test.preparation.course=="none"],
+  data$math.score[data$test.preparation.course=="completed"],
+  data$reading.score[data$test.preparation.course=="none"],
+  data$reading.score[data$test.preparation.course=="completed"],
+  data$writing.score[data$test.preparation.course=="none"],
+  data$writing.score[data$test.preparation.course=="completed"],
+  names = c("M", "Mp", "R", "Rp", "W", "Wp"),
+  main="Scores with and without preparation courses 
+  (suffix p = course completed)"
+)
+
+#testiranje varijanci
+var.test(
+  data$math.score[data$test.preparation.course=="none"],
+  data$math.score[data$test.preparation.course=="completed"]
+)
+var.test(
+  data$reading.score[data$test.preparation.course=="none"],
+  data$reading.score[data$test.preparation.course=="completed"]
+)
+var.test(
+  data$writing.score[data$test.preparation.course=="none"],
+  data$writing.score[data$test.preparation.course=="completed"]
+) #odbacuje H0
+
+#t testovi (razlika veća od 5 bodova)
+t.test(
+  data$math.score[data$test.preparation.course=="completed"],
+  data$math.score[data$test.preparation.course=="none"],
+  alt = "greater",
+  var.equal = TRUE,
+  mu=5
+)
+t.test(
+  data$reading.score[data$test.preparation.course=="completed"],
+  data$reading.score[data$test.preparation.course=="none"],
+  alt = "greater",
+  var.equal = TRUE,
+  mu=5
+)
+t.test(
+  data$writing.score[data$test.preparation.course=="completed"],
+  data$writing.score[data$test.preparation.course=="none"],
+  alt = "greater",
+  var.equal = FALSE,
+  mu=5
+)
+```
+Zaključak - test preparation course - boxplot, t.test i var.test
+
+Iz boxplota je vidljivo da je za svaku vrstu ispita rezultat bolji kada se obavi tečaj pripreme za ispite. Kod matematike taj tečaj čini manju razliku nego kod čitanja i pisanja, gdje je razlika naglašenija. Te pretpostavke potvrđujemo T-testom koji za čitanje i pisanje odbacuje nultu hipotezu, dakle postoji razlika u srednjim vrijednostima rezultata veća od 5, dok se za ispit iz matematike ne možemo odbaciti nultu hipotezu, dakle razlika u srednjim vrijednostima sa i bez tečaja pripreme nije dovoljno značajna (arbitratnih 5 bodova). F test za usporedbu varijanci zadržava nultu hipotezu kod čitanja i matematike, što ukazuje na jednakost varijanci kod tih ispita, ali odbacuje nultu hipotezu kod pisanja pa zato u T-testu za ispit pisanja postavljamo parametar var.equal na false vrijednost.
+
+
+Linearna regresija
+
+Model za math score
+```{r}
+data <- data %>% mutate(`parental.level.of.education`= relevel(`parental.level.of.education`, ref="some high school")) 
+data <- data %>%  mutate(`test.preparation.course` = relevel(`test.preparation.course`, ref = "none"))
+fitmath = lm(`math.score`~lunch + `test.preparation.course` + `parental.level.of.education` + `race/ethnicity` + gender, data=data)
+summary(fitmath)
+qqPlot(rstandard(fitmath))
+ks.test(rstandard(fitmath),'pnorm')
+Anova(fitmath)
+```
+Zaključak - math score - regresija
+
+p-vrijednost F-statistike ekstremno je mala, što ukazuje na to da barem jedna od odabranih nezavisnih varijabli snažno utječe na zavisnu varijablu tj. rezultate na ispitima. Male p-vrijednosti u ANOVA tablici ukazuju na to da su razlike u srednjim vrijednostima rezultata ispita mnogo veće između različitih skupina nego unutar njih samih. Učenici koji imaju opciju standardnog ručka u prosjeku će imati 10.8 više bodova od onih koji imaju reduciranu opciju ručka. Tečaj pripreme za ispit očekivano podiže prosječni rezultat za 5.5 bodova. S povećanjem razine obrazovanja roditelja uglavnom se povećava i rezultat ispita, i povećanje je značajnije s većim obrazovnim titulama. Izuzetak predstavljaju roditelji s završenom srednjom školom čija djeca u prosjeku dobivaju 0.5 bodova manje od onih čiji roditelji nisu završili srednju školu, no to se može zanemariti budući da je razlika višestruko manja nego druge razlike u titulama, a i p-vrijednost je iznimno visoka (68.62%). Može se primjetiti i da dječacima bolje leže matematički zadaci jer u prosjeku dobivaju skoro 5 bodova više od djevojčica. Razlike između etničkih skupina mogu biti vrlo značajne, primjerice grupa E u prosjeku ima čak 10.13 više bodova od grupe A, što je gotovo jednako velika razlika kao i opcija ručka, za koji je razlika najveća. Oblik pravca u qqPlotu i prihvaćanje nulte hipoteze Kolmogorov-Smirnovljeva testa ukazuju na normalnost reziduala, što se ponavlja i u regresijama vezanim za ispite iz čitanja i pisanja.
+
+
+Model za reading score
+```{r}
+fitreading=lm(`reading.score` ~ lunch + `test.preparation.course` + `parental.level.of.education` + `race/ethnicity` + gender, data=data)
+summary(fitreading)
+qqPlot(rstandard(fitreading))
+ks.test(rstandard(fitreading),'pnorm')
+Anova(fitreading)
+```
+Zaključak - reading score - regresija
+
+Kao i za rezultate iz matematike, i ovdje ručak i tečaj pripreme značajno povećavaju prosječni rezultat ispita, za malo više od 7 bodova svaki. Koeficijenti vezani za stupanj obrazovanja roditelja slični su kao i kod rezultata ispita iz matematike. Djevojčice su značajno bolje u čitanju od dječaka, koji u prosjeku na takvom ispitu imaju 7 bodova manje od djevojčica. Razlike među etničkim skupinama su manje, a najveća među njima opet je u korist grupe E u odnosu na grupu A, ali sada za 5.5 bodova.
+
+
+Model za writing score
+```{r}
+fitwriting=lm(`writing.score` ~ lunch + `test.preparation.course` + `parental.level.of.education` + `race/ethnicity` + gender, data=data)
+summary(fitwriting)
+qqPlot(rstandard(fitwriting))
+ks.test(rstandard(fitwriting),'pnorm')
+Anova(fitwriting)
+```
+Zaključak - writing score - regresija
+
+Pohađanje tečaja pripreme za ispit kod ispita čitanja rezultira najvećim poboljšanjem rezultata, čak za 10 bodova u prosjeku. Opcija standardnog ručka podiže rezultate za više od 8 bodova u prosjeku. Stupanj obrazovanja roditelja najznačajniji je kod ispita pisanja u odnosu na ispite čitanja i ispite matematike, gdje je on najmanje značajan u odnosu na druga dva. Razlika između spolova najveća je kod ispita čitanja, čak 9 bodova u korist djevojčica. 
+
+
+Model za usporedbu reading i writing
+```{r}
+fitwritread=lm(`writing.score` ~ `reading.score`, data=data)
+summary(fitwritread)
+plot(data$reading.score, data$writing.score)
+lines(data$reading.score, fitwritread$fitted.values, col='red')
+qqPlot(rstandard(fitwritread))
+ks.test(rstandard(fitwritread),'pnorm')
+Anova(fitwritread)
+```
+Zaključak - usporedba reading i writing score - regresija
+
+Model linearne regresije vraća vrlo uvjerljive rezultate da su čitanje i pisanje usko povezani sa prilagođenim koeficijentom determinacije od čak 0.9112. Grafički prikaz podataka pokazuje tu jasnu povezanost. F test potvrđuje valjanost modela sa malom p vrijednošću i qqPlot i Kolmogorov – Smirnovljev test ukazuju na normalnost distribucije reziduala.
+
+
+Model za usporedbu writing i math
+```{r}
+fitwritmath=lm(`writing.score` ~ `math.score`, data=data)
+summary(fitwritmath)
+
+plot(data$math.score, data$writing.score)
+lines(data$math.score, fitwritmath$fitted.values, col='red')
+qqPlot(rstandard(fitwritmath))
+ks.test(rstandard(fitwritmath),'pnorm')
+Anova(fitwritmath)
+```
+Zaključak - usporedba writing i math score - regresija
+
+Iako je grafički i u testu i dalje jasna povezanost ove dvije varijable, nije toliko značajna kao u prošlom testu. Grafički se vidi puno veća raspršenost oko modelirane linije, no i dalje je korelacija velika sa prilagođenim koeficijentom determinacije od 0.6439. F statistika ukazuje na valjanost modela i qqPlot i Kolmogorov – Smirnovljev test ukazuju na normalnost distribucije reziduala.
+
+
+Model za usporedbu reading i math
+```{r}
+fitreadmath=lm(`reading.score` ~ `math.score`, data=data)
+summary(fitreadmath)
+plot(data$math.score, data$reading.score)
+lines(data$math.score, fitreadmath$fitted.values, col='red')
+qqPlot(rstandard(fitreadmath))
+ks.test(rstandard(fitreadmath),'pnorm')
+Anova(fitreadmath)
+```
+Zaključak - usporedba reading i math score - regresija
+
+U ovom testu su rezultati vrlo slični prošlom. Povezanost čitanja i matematike je velika, ali ne tako velika kao povezanost čitanja i pisanja, što vjerojatno proizlazi iz tendencije da djevojčice bolje rješavaju takve zadatke od dječaka i to se poklapa s našim prijašnjim rezultatima.
+
+
+Math sa ostalima
+```{r}
+fitall=lm(`math.score` ~ `reading.score` + `writing.score`, data=data)
+summary(fitall)
+qqPlot(rstandard(fitall))
+ks.test(rstandard(fitall),'pnorm')
+Anova(fitall)
+```
+Zaključak - usporedba math score sa reading i writing score - regresija
+
+Iako test ukazuje na značajnu povezanost matematike i sa čitanjem i sa pisanjem, ta povezanost je mnogo veća za čitanje. Općenito smo u nekoliko testova dobili slične rezultate: pisanje manje ovisi o nekim parametrima poput stupnja obrazovanja roditelja od čitanja i matematike. Ostali testovi su zadovoljavajući i ukazuju na valjanost modela i normalnost distribucije reziduala.
