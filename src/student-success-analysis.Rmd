@@ -1,0 +1,56 @@
+---
+title: "student-success-analysis"
+output: html_document
+---
+
+Type in console once install.packages("tidyverse")
+
+Tidyverse tutorial nalazi se u auditorne/1-auditorna-vjezba/prva_auditorna_vjezba.rmd
+Linija 195
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# library(rlang)
+library(tidyverse)
+#library(dplyr)
+
+message("Your current working directory is: ", getwd())
+```
+
+
+## Data loading and getting the feeling of the dataset
+
+```{r}
+students <- readxl::read_excel("student_data.xlsx")
+
+# 370 rows, 39 columns
+dim(students)
+
+# Show column names
+names(students)
+```
+```{r}
+# Show first few rows
+head(students)
+```
+
+
+```{r}
+# Show details for each column
+summary(students)
+```
+```{r}
+# Check the class of the column. "numeric", "character"...
+sapply(students,class)
+```
+
+```{r}
+# Filter valeus
+students <- students %>% filter_all(all_vars(!is.na(.) & !is.nan(.) & !is.null(.)))
+
+```
+
+
+
