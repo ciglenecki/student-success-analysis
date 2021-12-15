@@ -190,7 +190,7 @@ var_equal_por <- if (por_f_test$p.value < alpha) FALSE else TRUE
 cat_reject_h0("For Portuguese variance test:", !var_equal_por)
 ```
 
-
+# T-test for grade equality
 ```{r}
 var_equal_mat
 var_equal_por
