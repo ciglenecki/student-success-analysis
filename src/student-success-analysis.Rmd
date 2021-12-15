@@ -1,12 +1,16 @@
 ---
 title: "student-success-analysis"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(rlang)
 library(tidyverse)
+library(styler)
+styler::style_dir() # Style the current file so it's well formated
 message("Your current working directory is: ", getwd())
 ```
 
@@ -36,7 +40,7 @@ summary(students_org)
 
 ```{r}
 # Check the class of the column. "numeric", "character"...
-sapply(students_org,class)
+sapply(students_org, class)
 ```
 
 ```{r}
@@ -44,7 +48,9 @@ sapply(students_org,class)
 # Let's check if any columns exceed the maximum or minumum values specified in the pdf
 # This makes sense only for numerical values
 
-colMax <- students_org %>% select(where(is.numeric)) %>% sapply(., max, na.rm = TRUE)
+colMax <- students_org %>%
+  select(where(is.numeric)) %>%
+  sapply(., max, na.rm = TRUE)
 colMax
 
 # Every column has normal maximum value
@@ -56,7 +62,7 @@ colMax
 ```{r}
 # Are there any na values?
 students_org %>% filter(is.na(.))
-sum(apply(students_org,2,is.nan))
+sum(apply(students_org, 2, is.nan))
 students_org %>% filter(is.null(.))
 
 # Drop these values just in case they show up with another dataset
@@ -64,5 +70,141 @@ students_org %>% filter(is.null(.))
 students <- students_org %>% filter_all(all_vars(!is.na(.) & !is.nan(.) & !is.null(.)))
 ```
 
+```{r}
+# Show average grade for all schools
+
+schools <- students %>%
+  select("school") %>%
+  distinct(.)
+schools # [GP, MS]
+subject_final_grade_names <- names(students)[grepl("G3", names(students))]
+subject_final_grade_names
+students_final_grade <- students %>% select("school", subject_final_grade_names)
+
+# Select only the subject grade and school
+gp_mat <- students_final_grade %>%
+  filter(school == "GP") %>%
+  select(G3_mat, school)
+gp_por <- students_final_grade %>%
+  filter(school == "GP") %>%
+  select(G3_por, school)
+ms_mat <- students_final_grade %>%
+  filter(school == "MS") %>%
+  select(G3_mat, school)
+ms_por <- students_final_grade %>%
+  filter(school == "MS") %>%
+  select(G3_por, school)
+
+# Rename all columns to "grade"
+gp_mat <- gp_mat %>% rename(grade = G3_mat)
+gp_por <- gp_por %>% rename(grade = G3_por)
+ms_mat <- ms_mat %>% rename(grade = G3_mat)
+ms_por <- ms_por %>% rename(grade = G3_por)
 
 
+# TODO: can this data be grouped and used dynamically? (support multiple schools and mutliple subjects)
+
+# scale_this <- function(x){
+#   (x - mean(x, na.rm=TRUE)) / sd(x, na.rm=TRUE)
+# }
+
+# gp_mat_scaled <- gp_mat %>% mutate(G3_mat = scale_this(G3_mat))
+# gp_por_scaled <- gp_por %>% mutate(G3_por = scale_this(G3_por))
+# ms_mat_scaled <- ms_mat %>% mutate(G3_mat = scale_this(G3_mat))
+# ms_por_scaled <- ms_por %>% mutate(G3_por = scale_this(G3_por))
+```
+
+```{r}
+# Plot math -- final grade
+ggplot(gp_mat, aes(x = grade, y = (..count.. / sum(..count..)))) +
+  geom_histogram(bins = 20, aes(color = school, fill = school), alpha = 0.5) +
+  geom_histogram(data = ms_mat, bins = 20, aes(color = school, fill = school), alpha = 0.3) +
+  geom_vline(data = gp_mat, aes(xintercept = mean(grade), color = school), linetype = "dashed") +
+  geom_vline(data = ms_mat, aes(xintercept = mean(grade), color = school), linetype = "dashed") +
+  xlab("Grade") +
+  ylab("Relative frequency") +
+  labs(title = "Mathematics - final grade for each school")
+
+# Plot portug -- final grade
+ggplot(gp_por, aes(x = grade, y = (..count.. / sum(..count..)))) +
+  geom_histogram(bins = 20, aes(color = school, fill = school), alpha = 0.5) +
+  geom_histogram(data = ms_por, bins = 20, aes(color = school, fill = school), alpha = 0.3) +
+  geom_vline(data = gp_por, aes(xintercept = mean(grade), color = school), linetype = "dashed") +
+  geom_vline(data = ms_por, aes(xintercept = mean(grade), color = school), linetype = "dashed") +
+  xlab("Grade") +
+  ylab("Relative frequency") +
+  labs(title = "Portuguese - final grade for each school")
+```
+
+```{r}
+## Additional check for normailty is done with qqnorm
+qqnorm(gp_mat$grade, pch = 1, frame = FALSE, main = "GP school math")
+qqnorm(gp_por$grade, pch = 1, frame = FALSE, main = "GP school portuguese")
+qqnorm(ms_mat$grade, pch = 1, frame = FALSE, main = "MS school math")
+qqnorm(ms_por$grade, pch = 1, frame = FALSE, main = "MS school portuguese")
+```
+
+
+# F-test of variance equality
+Argument order for F-test of variance equality doesn't matter but in general:
+$$\frac{\sigma_{1}^2}{\sigma_{2}^2},\quad\sigma_{1}^2 > \sigma_{2}^2$$
+
+$p \textemdash$ probability that under the null hypothesis of obtaining the value (of the test statistic) that's as extreme (or more extreme) than the value we got computed from the sample we have
+
+
+If $p < \alpha$ we are rejecting the hypothesis $H0$ in favor of $H1$
+  - falls under right tail => rejection
+
+```{r}
+
+# Let's check variances just as a sanity check:
+cat("Mathematics variances", var(gp_mat$grade), var(ms_mat$grade))
+cat("Portugeuse variances", var(gp_por$grade), var(ms_por$grade))
+
+# At first glance, it seems that we will probably reject H0 hypothesis for F-test in the case of Portuguese, as variances are vastly different.
+alpha <- 0.05
+
+# H0 - Variance of GP_MAT and MS_MAT are equal
+# H1 - not H0
+mat_f_test <- var.test(gp_mat$grade, ms_mat$grade, alternative = "two.sided") # F = 1.0752, p = 0.817
+mat_f_test
+
+# H0 - Variance of GP_POR and MS_MAT are equal
+# H1 - not H0
+por_f_test <- var.test(gp_por$grade, ms_por$grade, alternative = "two.sided") # F = 1.0752, p = 0.817
+por_f_test
+```
+
+```{r}
+# This part won't be outputed as code in PDF
+
+cat_reject_h0 <- function(prefix_message, is_h0_rejected) {
+  cat(prefix_message, "\n")
+  if (is_h0_rejected) cat("\tWe are rejecting the H0 hypothesis in favor of H1\n") else cat("\tWe are not rejecting the H0 hypothesis\n")
+}
+
+var_equal_mat <- if (mat_f_test$p.value < alpha) FALSE else TRUE
+cat_reject_h0("For mathemathics variance test:", !var_equal_mat)
+
+var_equal_por <- if (por_f_test$p.value < alpha) FALSE else TRUE
+cat_reject_h0("For Portuguese variance test:", !var_equal_por)
+```
+
+
+```{r}
+var_equal_mat
+var_equal_por
+
+# H0 - GP school has equal grades to in mathematics to MS (GP=MS)
+# H1 - GP>MS
+mat_t_test <- t.test(gp_mat$grade, ms_mat$grade, alt = "greater", var.equal = var_equal_mat)
+is_gp_mat_better <- if (mat_t_test$p.value < alpha) TRUE else FALSE
+cat_reject_h0("For mathemathics T_test test:", is_gp_mat_better)
+
+# H0 - GP school has equal grades to in Portuguese to MS (GP=MS)
+# H1 - GP>MS
+por_t_test <- t.test(gp_por$grade, ms_por$grade, alt = "greater", var.equal = var_equal_por)
+is_gp_por_better <- if (por_t_test$p.value < alpha) TRUE else FALSE
+cat_reject_h0("For Portuguese T_test test:", is_gp_por_better)
+
+```
