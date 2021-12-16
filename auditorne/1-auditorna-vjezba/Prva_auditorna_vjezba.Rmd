@@ -166,7 +166,7 @@ sqrt(var(irisdata$Petal.Length))
 help(var)
 
 # Koeficijent varijacije -  relativna mjera rasipanja koja opisuje rasipanje podataka u odnosu na njihovu aritmetičku sredinu. Kada ima smisla koristiti ovu mjeru?
-#suppressWarnings(require(raster,quietly = TRUE))
+suppressWarnings(require(raster,quietly = TRUE))
 #cv(irisdata$Petal.Length)
 sd(irisdata$Petal.Length)/mean(irisdata$Petal.Length)
 ```

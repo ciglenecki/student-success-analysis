@@ -63,6 +63,19 @@ students_org %>% filter(is.null(.))
 # We will continue using "student" variable
 students <- students_org %>% filter_all(all_vars(!is.na(.) & !is.nan(.) & !is.null(.)))
 ```
+```{r}
+students$average_grade <- (students$G3_mat + students$G3_por)/2
 
+fit.studytime = lm(average_grade~studytime,data=students)
+plot(students$studytime,students$average_grade)
+lines(students$studytime,fit.studytime$fitted.values,col='red')
+
+#Pearsonov korelacijski koeficijent
+cor(students$studytime,students$average_grade)
+
+cor.test(students$studytime,students$average_grade)
+
+summary(fit.studytime)
+```
 
 
