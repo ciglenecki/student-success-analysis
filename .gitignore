@@ -1,3 +1,5 @@
+.directory
+*.log
 # History files
 .Rhistory
 .Rapp.history

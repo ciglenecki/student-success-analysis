@@ -52,7 +52,7 @@ Linux - R installation (tidyverse requires these dependencies):
 - [ ] 
 - [ ] 
 - [ ] Question: Are students more successful in maths or the main subject?
-- [ ] Question: Which schools perform better than other schools in which subjects?
+- [ ] Question (Matej): Which schools perform better than other schools in which subjects?
   - [ ] Create a "matrix" of schools/subjects
   - [ ] Later, you can sort for a specific subject, e.g. "Math" and check top 5 schools
 - [ ] Question: Which variable is the best predictor of success on a specific subject
