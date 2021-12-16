@@ -17,7 +17,7 @@ message("Your current working directory is: ", getwd())
 
 ## Data loading and getting the feeling of the dataset
 
-```{r}
+```{r, colapse=TRUE}
 students_org <- readxl::read_excel("student_data.xlsx")
 
 # 370 rows, 39 columns
@@ -26,24 +26,24 @@ dim(students_org)
 # Show column names
 names(students_org)
 ```
-```{r}
+```{r, colapse=TRUE}
 # Show first few rows
 head(students_org)
 ```
 
 
-```{r}
+```{r, colapse=TRUE}
 # Show details for each column
 summary(students_org)
 ```
 
 
-```{r}
+```{r, colapse=TRUE}
 # Check the class of the column. "numeric", "character"...
 sapply(students_org, class)
 ```
 
-```{r}
+```{r, colapse=TRUE}
 
 # Let's check if any columns exceed the maximum or minumum values specified in the pdf
 # This makes sense only for numerical values
@@ -59,7 +59,7 @@ colMax
 
 
 
-```{r}
+```{r, colapse=TRUE}
 # Are there any na values?
 students_org %>% filter(is.na(.))
 sum(apply(students_org, 2, is.nan))
@@ -70,7 +70,7 @@ students_org %>% filter(is.null(.))
 students <- students_org %>% filter_all(all_vars(!is.na(.) & !is.nan(.) & !is.null(.)))
 ```
 
-```{r}
+```{r, colapse=TRUE}
 # Show average grade for all schools
 
 schools <- students %>%
@@ -114,7 +114,7 @@ ms_por <- ms_por %>% rename(grade = G3_por)
 # ms_por_scaled <- ms_por %>% mutate(G3_por = scale_this(G3_por))
 ```
 
-```{r}
+```{r, colapse=TRUE}
 # Plot math -- final grade
 ggplot(gp_mat, aes(x = grade, y = (..count.. / sum(..count..)))) +
   geom_histogram(bins = 20, aes(color = school, fill = school), alpha = 0.5) +
@@ -136,7 +136,7 @@ ggplot(gp_por, aes(x = grade, y = (..count.. / sum(..count..)))) +
   labs(title = "Portuguese - final grade for each school")
 ```
 
-```{r}
+```{r, colapse=TRUE}
 ## Additional check for normailty is done with qqnorm
 qqnorm(gp_mat$grade, pch = 1, frame = FALSE, main = "GP school math")
 qqnorm(gp_por$grade, pch = 1, frame = FALSE, main = "GP school portuguese")
@@ -155,7 +155,7 @@ $p \textemdash$ probability that under the null hypothesis of obtaining the valu
 If $p < \alpha$ we are rejecting the hypothesis $H0$ in favor of $H1$
   - falls under right tail => rejection
 
-```{r}
+```{r, colapse=TRUE}
 
 # Let's check variances just as a sanity check:
 cat("Mathematics variances", var(gp_mat$grade), var(ms_mat$grade))
@@ -175,12 +175,12 @@ por_f_test <- var.test(gp_por$grade, ms_por$grade, alternative = "two.sided") # 
 por_f_test
 ```
 
-```{r}
+```{r, colapse=TRUE}
 # This part won't be outputed as code in PDF
 
 cat_reject_h0 <- function(prefix_message, is_h0_rejected) {
   cat(prefix_message, "\n")
-  if (is_h0_rejected) cat("\tWe are rejecting the H0 hypothesis in favor of H1\n") else cat("\tWe are not rejecting the H0 hypothesis\n")
+  if (is_h0_rejected) cat("\tWe are rejecting the H0 hypothesis in favor of hypothesis H1\n") else cat("\tWe are not rejecting the H0 hypothesis\n")
 }
 
 var_equal_mat <- if (mat_f_test$p.value < alpha) FALSE else TRUE
@@ -191,7 +191,7 @@ cat_reject_h0("For Portuguese variance test:", !var_equal_por)
 ```
 
 # T-test for grade equality
-```{r}
+```{r, collapse=TRUE}
 var_equal_mat
 var_equal_por
 
@@ -199,12 +199,11 @@ var_equal_por
 # H1 - GP>MS
 mat_t_test <- t.test(gp_mat$grade, ms_mat$grade, alt = "greater", var.equal = var_equal_mat)
 is_gp_mat_better <- if (mat_t_test$p.value < alpha) TRUE else FALSE
-cat_reject_h0("For mathemathics T_test test:", is_gp_mat_better)
+cat_reject_h0("Mathemathics T-test test:", is_gp_mat_better)
 
 # H0 - GP school has equal grades to in Portuguese to MS (GP=MS)
 # H1 - GP>MS
 por_t_test <- t.test(gp_por$grade, ms_por$grade, alt = "greater", var.equal = var_equal_por)
 is_gp_por_better <- if (por_t_test$p.value < alpha) TRUE else FALSE
-cat_reject_h0("For Portuguese T_test test:", is_gp_por_better)
-
+cat_reject_h0("Portuguese T-test test:", is_gp_por_better)
 ```
