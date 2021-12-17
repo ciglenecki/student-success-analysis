@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(rlang)
 library(tidyverse)
 library(styler)
+library(fastDummies)
 styler::style_dir() # Style the current file so it's well formated
 message("Your current working directory is: ", getwd())
 ```
@@ -68,6 +69,30 @@ students_org %>% filter(is.null(.))
 # Drop these values just in case they show up with another dataset
 # We will continue using "student" variable
 students <- students_org %>% filter_all(all_vars(!is.na(.) & !is.nan(.) & !is.null(.)))
+```
+
+# Petar Dragojević
+
+```{r}
+students$average_grade <- (students$G3_mat + students$G3_por)/2
+
+fit.studytime = lm(average_grade~studytime,data=students)
+plot(students$studytime,students$average_grade)
+lines(students$studytime,fit.studytime$fitted.values,col='red')
+
+#Pearsonov korelacijski koeficijent
+cor(students$studytime,students$average_grade)
+
+cor.test(students$studytime,students$average_grade)
+
+summary(fit.studytime)
+
+#procjena modela s dummy varijablama
+students.d = dummy_cols(students,select_columns='studytime')
+
+#procjena modela s dummy varijablama
+fit.multi.d = lm(average_grade ~ studytime_1 + studytime_2, students.d)
+summary(fit.multi.d)
 ```
 
 ## Tomislav Prhat
