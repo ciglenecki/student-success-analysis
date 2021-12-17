@@ -51,10 +51,10 @@ Linux - R installation (tidyverse requires these dependencies):
 - [ ] 
 - [ ] 
 - [ ] 
-- [ ] Question: Are students more successful in maths or the main subject?
-- [ ] Question: Which schools perform better than other schools in which subjects?
+- [ ] Question (Tomislav): Are students more successful in maths or the main subject?
+- [ ] Question (Matej): Which schools perform better than other schools in which subjects?
   - [ ] Create a "matrix" of schools/subjects
   - [ ] Later, you can sort for a specific subject, e.g. "Math" and check top 5 schools
-- [ ] Question: Which variable is the best predictor of success on a specific subject
+- [ ] Question (Magda): Which variable is the best predictor of success on a specific subject
   - [ ] Later, create add top predicting variables for all subjects
-- [ ] Question: How does student's time put into studying result in the final grade? 
+- [ ] Question (Petar): How does student's time put into studying result in the final grade? 
