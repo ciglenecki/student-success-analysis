@@ -72,27 +72,47 @@ students <- students_org %>% filter_all(all_vars(!is.na(.) & !is.nan(.) & !is.nu
 ```
 
 # Petar Dragojević
-
+# zavisnost izmedu edukacije roditelja i uspješnosti
 ```{r}
+
 students$average_grade <- (students$G3_mat + students$G3_por)/2
 
-fit.studytime = lm(average_grade~studytime,data=students)
-plot(students$studytime,students$average_grade)
-lines(students$studytime,fit.studytime$fitted.values,col='red')
+#za edukaciju roditelja uzimamo onu koja je veća
+students$highestparentedu <- pmax(students$Medu, students$Fedu)
 
-#Pearsonov korelacijski koeficijent
-cor(students$studytime,students$average_grade)
+boxplot(students$G3_mat[students$highestparentedu=="0"], students$G3_mat[students$highestparentedu=="1"], students$G3_mat[students$highestparentedu=="2"], students$G3_mat[students$highestparentedu=="3"], students$G3_mat[students$highestparentedu=="4"], names = c("none", "primary", "5th to 9th grade", "secondary", "higher"))
 
-cor.test(students$studytime,students$average_grade)
+boxplot(students$G3_por[students$highestparentedu=="0"], students$G3_por[students$highestparentedu=="1"], students$G3_por[students$highestparentedu=="2"], students$G3_por[students$highestparentedu=="3"], students$G3_por[students$highestparentedu=="4"], names = c("none", "primary", "5th to 9th grade", "secondary", "higher"))
 
-summary(fit.studytime)
+var.test(students$G3_mat[students$highestparentedu=="1"], students$G3_mat[students$highestparentedu=="4"])
+t.test(students$G3_mat[students$highestparentedu=="1"], students$G3_mat[students$highestparentedu=="4"], alt = "greater", var.equal = TRUE, mu = 5)
 
-#procjena modela s dummy varijablama
-students.d = dummy_cols(students,select_columns='studytime')
+t.test(students$G3_mat[students$highestparentedu=="1"], students$G3_mat[students$highestparentedu=="4"], alt = "greater", var.equal = TRUE)
 
-#procjena modela s dummy varijablama
-fit.multi.d = lm(average_grade ~ studytime_1 + studytime_2, students.d)
-summary(fit.multi.d)
+
+data1 = students %>% filter(highestparentedu=="1" | highestparentedu=="4")
+#data1$highestparentedu=unfactor(data1$highestparentedu)
+tbl = table(data1$highestparentedu, data1$G3_mat)
+print(addmargins(tbl))
+print(tbl)
+chisq.test(tbl,correct=F)
+
+c1 = data1 %>% filter(G3_mat <= 5 & highestparentedu=="1")
+c2 = data1 %>% filter(G3_mat > 5 & G3_mat <= 10 & highestparentedu=="1")
+c3 = data1 %>% filter(G3_mat > 10 & G3_mat <= 15 & highestparentedu=="1")
+c4 = data1 %>% filter(G3_mat > 15 & G3_mat <= 20 & highestparentedu=="1")
+c5 = data1 %>% filter(G3_mat <= 5 & highestparentedu=="4")
+c6 = data1 %>% filter(G3_mat > 5 & G3_mat <= 10 & highestparentedu=="4")
+c7 = data1 %>% filter(G3_mat > 10 & G3_mat <= 15 & highestparentedu=="4")
+c8 = data1 %>% filter(G3_mat > 15 & G3_mat <= 20 & highestparentedu=="4")
+tbl2 <- matrix(c(nrow(c1), nrow(c2), nrow(c3), nrow(c4), nrow(c5), nrow(c6), nrow(c7), nrow(c8)), ncol = 4, byrow=TRUE)
+colnames(tbl2) <- c('0-5', '6-10', '11-15', '16-20')
+rownames(tbl2) <- c('edu=1', 'edu=4')
+tbl2 <- as.table(tbl2)
+tbl2
+
+chisq.test(tbl2,correct=F)
+
 ```
 
 ## Tomislav Prhat
