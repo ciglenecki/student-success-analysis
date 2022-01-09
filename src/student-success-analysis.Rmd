@@ -89,31 +89,89 @@ t.test(students$G3_mat[students$highestparentedu=="1"], students$G3_mat[students
 
 t.test(students$G3_mat[students$highestparentedu=="1"], students$G3_mat[students$highestparentedu=="4"], alt = "greater", var.equal = TRUE)
 
+```
 
-data1 = students %>% filter(highestparentedu=="1" | highestparentedu=="4")
+
+```{r}
+#data1 = students %>% filter(highestparentedu=="1" | highestparentedu=="4")
+#data1 = students %>% filter(Fedu=="1" | Fedu=="4")
 #data1$highestparentedu=unfactor(data1$highestparentedu)
-tbl = table(data1$highestparentedu, data1$G3_mat)
-print(addmargins(tbl))
-print(tbl)
-chisq.test(tbl,correct=F)
+#tbl = table(data1$Fedu, data1$G3_mat)
+#print(addmargins(tbl))
+#print(tbl)
+#chisq.test(tbl,correct=F)
 
-c1 = data1 %>% filter(G3_mat <= 5 & highestparentedu=="1")
-c2 = data1 %>% filter(G3_mat > 5 & G3_mat <= 10 & highestparentedu=="1")
-c3 = data1 %>% filter(G3_mat > 10 & G3_mat <= 15 & highestparentedu=="1")
-c4 = data1 %>% filter(G3_mat > 15 & G3_mat <= 20 & highestparentedu=="1")
-c5 = data1 %>% filter(G3_mat <= 5 & highestparentedu=="4")
-c6 = data1 %>% filter(G3_mat > 5 & G3_mat <= 10 & highestparentedu=="4")
-c7 = data1 %>% filter(G3_mat > 10 & G3_mat <= 15 & highestparentedu=="4")
-c8 = data1 %>% filter(G3_mat > 15 & G3_mat <= 20 & highestparentedu=="4")
+
+#H0: Ocjena iz matematike i edukacija majke su nezavisna obilježja
+#H1: Ocjena iz matematike i edukacija majke su zavisna obilježja
+#Koristimo test nezavisnosti
+c1 = students %>% filter(G3_mat < 10 & Medu=="1")
+c2 = students %>% filter(G3_mat >= 10 & G3_mat < 14 & Medu=="1")
+c3 = students %>% filter(G3_mat >= 14 & G3_mat < 16 & Medu=="1")
+c4 = students %>% filter(G3_mat >= 16 & G3_mat <= 20 & Medu=="1")
+c5 = students %>% filter(G3_mat < 10 & Medu=="4")
+c6 = students %>% filter(G3_mat >= 10 & G3_mat < 14 & Medu=="4")
+c7 = students %>% filter(G3_mat >= 14 & G3_mat < 16 & Medu=="4")
+c8 = students %>% filter(G3_mat >= 16 & G3_mat <= 20 & Medu=="4")
 tbl2 <- matrix(c(nrow(c1), nrow(c2), nrow(c3), nrow(c4), nrow(c5), nrow(c6), nrow(c7), nrow(c8)), ncol = 4, byrow=TRUE)
-colnames(tbl2) <- c('0-5', '6-10', '11-15', '16-20')
+colnames(tbl2) <- c('F', 'C', 'B', 'A')
 rownames(tbl2) <- c('edu=1', 'edu=4')
 tbl2 <- as.table(tbl2)
-tbl2
+#tbl2
+
+added_margins_tbl = addmargins(tbl2)
+print(added_margins_tbl)
+
+#očekivane frekvencije svih razreda moraju biti veće ili jednake 5
+for (col_names in colnames(added_margins_tbl)){
+  for (row_names in rownames(added_margins_tbl)){
+    if (!(row_names == 'Sum' | col_names == 'Sum') ){
+      cat('Očekivane frekvencije za razred ',col_names,'-',row_names,': ',(added_margins_tbl[row_names,'Sum'] * added_margins_tbl['Sum',col_names]) / added_margins_tbl['Sum','Sum'],'\n')
+    }
+  }
+}
+
+chisq.test(tbl2,correct=F)
+```
+
+p-value Testa nezavisnosti iznosi manje od 0.05 stoga odbacujemo hipotezu H0, te zaključujemo da su edukacija oca i završna ocjena iz matematike zavisne.
+
+```{r}
+#H0: Ocjena iz portugala i edukacija majke su nezavisna obilježja
+#H1: Ocjena iz portugala i edukacija majke su zavisna obilježja
+#Koristimo test nezavisnosti
+c1 = students %>% filter(G3_por < 10 & Medu=="1")
+c2 = students %>% filter(G3_por >= 10 & G3_por < 14 & Medu=="1")
+c3 = students %>% filter(G3_por >= 14 & G3_por < 16 & Medu=="1")
+c4 = students %>% filter(G3_por >= 16 & G3_por <= 20 & Medu=="1")
+c5 = students %>% filter(G3_por < 10 & Medu=="4")
+c6 = students %>% filter(G3_por >= 10 & G3_por < 14 & Medu=="4")
+c7 = students %>% filter(G3_por >= 14 & G3_por < 16 & Medu=="4")
+c8 = students %>% filter(G3_por >= 16 & G3_por <= 20 & Medu=="4")
+tbl2 <- matrix(c(nrow(c1), nrow(c2), nrow(c3), nrow(c4), nrow(c5), nrow(c6), nrow(c7), nrow(c8)), ncol = 4, byrow=TRUE)
+colnames(tbl2) <- c('F', 'C', 'B', 'A')
+rownames(tbl2) <- c('edu=1', 'edu=4')
+tbl2 <- as.table(tbl2)
+#tbl2
+
+added_margins_tbl = addmargins(tbl2)
+print(added_margins_tbl)
+
+#očekivane frekvencije svih razreda moraju biti veće ili jednake 5
+for (col_names in colnames(added_margins_tbl)){
+  for (row_names in rownames(added_margins_tbl)){
+    if (!(row_names == 'Sum' | col_names == 'Sum') ){
+      cat('Očekivane frekvencije za razred ',col_names,'-',row_names,': ',(added_margins_tbl[row_names,'Sum'] * added_margins_tbl['Sum',col_names]) / added_margins_tbl['Sum','Sum'],'\n')
+    }
+  }
+}
 
 chisq.test(tbl2,correct=F)
 
 ```
+
+p-value Testa nezavisnosti iznosi manje od 0.05 stoga odbacujemo hipotezu H0, te zaključujemo da su edukacija oca i završna ocjena iz portugala zavisne.
+
 
 ## Tomislav Prhat
 
