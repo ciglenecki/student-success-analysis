@@ -74,45 +74,51 @@ students <- students_org %>% filter_all(all_vars(!is.na(.) & !is.nan(.) & !is.nu
 # Petar Dragojević
 # zavisnost izmedu edukacije roditelja i uspješnosti
 ```{r}
+students <- students %>% mutate(Mat_grade =
+                     case_when(G3_mat < 10 ~ "F", 
+                               G3_mat >= 10 & G3_mat < 14 ~ "C",
+                               G3_mat >= 14 & G3_mat < 16 ~ "B",
+                               G3_mat >= 16 ~ "A")
+)
 
 students$average_grade <- (students$G3_mat + students$G3_por)/2
 
 #za edukaciju roditelja uzimamo onu koja je veća
 students$highestparentedu <- pmax(students$Medu, students$Fedu)
 
+boxplot(students$G3_mat[students$Medu=="0"], students$G3_mat[students$Medu=="1"], students$G3_mat[students$Medu=="2"], students$G3_mat[students$Medu=="3"], students$G3_mat[students$Medu=="4"], students$G3_mat[students$Fedu=="0"], students$G3_mat[students$Fedu=="1"], students$G3_mat[students$Fedu=="2"], students$G3_mat[students$Fedu=="3"], students$G3_mat[students$Fedu=="4"], names = c("M/0", "M/1", "M/2", "M/3", "M/4", "F/0", "F/1", "F/2", "F/3", "F/4"))
+
+boxplot(students$G3_por[students$Medu=="0"], students$G3_por[students$Medu=="1"], students$G3_por[students$Medu=="2"], students$G3_por[students$Medu=="3"], students$G3_por[students$Medu=="4"], students$G3_por[students$Fedu=="0"], students$G3_por[students$Fedu=="1"], students$G3_por[students$Fedu=="2"], students$G3_por[students$Fedu=="3"], students$G3_por[students$Fedu=="4"], names = c("M/0", "M/1", "M/2", "M/3", "M/4", "F/0", "F/1", "F/2", "F/3", "F/4"))
+
 boxplot(students$G3_mat[students$highestparentedu=="0"], students$G3_mat[students$highestparentedu=="1"], students$G3_mat[students$highestparentedu=="2"], students$G3_mat[students$highestparentedu=="3"], students$G3_mat[students$highestparentedu=="4"], names = c("none", "primary", "5th to 9th grade", "secondary", "higher"))
 
 boxplot(students$G3_por[students$highestparentedu=="0"], students$G3_por[students$highestparentedu=="1"], students$G3_por[students$highestparentedu=="2"], students$G3_por[students$highestparentedu=="3"], students$G3_por[students$highestparentedu=="4"], names = c("none", "primary", "5th to 9th grade", "secondary", "higher"))
 
-var.test(students$G3_mat[students$highestparentedu=="1"], students$G3_mat[students$highestparentedu=="4"])
-t.test(students$G3_mat[students$highestparentedu=="1"], students$G3_mat[students$highestparentedu=="4"], alt = "greater", var.equal = TRUE, mu = 5)
-
-t.test(students$G3_mat[students$highestparentedu=="1"], students$G3_mat[students$highestparentedu=="4"], alt = "greater", var.equal = TRUE)
-
 ```
 
+```{r}
+#H0: Ocjena iz matematike i edukacija više educiranog roditelja su nezavisna obilježja
+#H1: Ocjena iz matematike i edukacija više educiranog roditelja su zavisna obilježja
+tbl = table(students$highestparentedu, students$Mat_grade)
+print(addmargins(tbl))
+chisq.test(tbl,correct=F)
+#radi pojave frekvencije manje od 5 koristimo Fisherov test
+fisher.test(tbl2)
+```
+p-value Testa nezavisnosti iznosi manje od 0.05 stoga odbacujemo hipotezu H0, te zaključujemo da su edukacija više educiranog roditelja i završna ocjena iz matematike zavisne.
 
 ```{r}
-#data1 = students %>% filter(highestparentedu=="1" | highestparentedu=="4")
-#data1 = students %>% filter(Fedu=="1" | Fedu=="4")
-#data1$highestparentedu=unfactor(data1$highestparentedu)
-#tbl = table(data1$Fedu, data1$G3_mat)
-#print(addmargins(tbl))
-#print(tbl)
-#chisq.test(tbl,correct=F)
-
-
 #H0: Ocjena iz matematike i edukacija majke su nezavisna obilježja
 #H1: Ocjena iz matematike i edukacija majke su zavisna obilježja
 #Koristimo test nezavisnosti
 c1 = students %>% filter(G3_mat < 10 & Medu=="1")
 c2 = students %>% filter(G3_mat >= 10 & G3_mat < 14 & Medu=="1")
 c3 = students %>% filter(G3_mat >= 14 & G3_mat < 16 & Medu=="1")
-c4 = students %>% filter(G3_mat >= 16 & G3_mat <= 20 & Medu=="1")
+c4 = students %>% filter(G3_mat >= 16 & Medu=="1")
 c5 = students %>% filter(G3_mat < 10 & Medu=="4")
 c6 = students %>% filter(G3_mat >= 10 & G3_mat < 14 & Medu=="4")
 c7 = students %>% filter(G3_mat >= 14 & G3_mat < 16 & Medu=="4")
-c8 = students %>% filter(G3_mat >= 16 & G3_mat <= 20 & Medu=="4")
+c8 = students %>% filter(G3_mat >= 16 & Medu=="4")
 tbl2 <- matrix(c(nrow(c1), nrow(c2), nrow(c3), nrow(c4), nrow(c5), nrow(c6), nrow(c7), nrow(c8)), ncol = 4, byrow=TRUE)
 colnames(tbl2) <- c('F', 'C', 'B', 'A')
 rownames(tbl2) <- c('edu=1', 'edu=4')
@@ -134,7 +140,7 @@ for (col_names in colnames(added_margins_tbl)){
 chisq.test(tbl2,correct=F)
 ```
 
-p-value Testa nezavisnosti iznosi manje od 0.05 stoga odbacujemo hipotezu H0, te zaključujemo da su edukacija oca i završna ocjena iz matematike zavisne.
+p-value Testa nezavisnosti iznosi manje od 0.05 stoga odbacujemo hipotezu H0, te zaključujemo da su edukacija majke i završna ocjena iz matematike zavisne.
 
 ```{r}
 #H0: Ocjena iz portugala i edukacija majke su nezavisna obilježja
@@ -143,11 +149,11 @@ p-value Testa nezavisnosti iznosi manje od 0.05 stoga odbacujemo hipotezu H0, te
 c1 = students %>% filter(G3_por < 10 & Medu=="1")
 c2 = students %>% filter(G3_por >= 10 & G3_por < 14 & Medu=="1")
 c3 = students %>% filter(G3_por >= 14 & G3_por < 16 & Medu=="1")
-c4 = students %>% filter(G3_por >= 16 & G3_por <= 20 & Medu=="1")
+c4 = students %>% filter(G3_por >= 16 & Medu=="1")
 c5 = students %>% filter(G3_por < 10 & Medu=="4")
 c6 = students %>% filter(G3_por >= 10 & G3_por < 14 & Medu=="4")
 c7 = students %>% filter(G3_por >= 14 & G3_por < 16 & Medu=="4")
-c8 = students %>% filter(G3_por >= 16 & G3_por <= 20 & Medu=="4")
+c8 = students %>% filter(G3_por >= 16 & Medu=="4")
 tbl2 <- matrix(c(nrow(c1), nrow(c2), nrow(c3), nrow(c4), nrow(c5), nrow(c6), nrow(c7), nrow(c8)), ncol = 4, byrow=TRUE)
 colnames(tbl2) <- c('F', 'C', 'B', 'A')
 rownames(tbl2) <- c('edu=1', 'edu=4')
@@ -167,6 +173,7 @@ for (col_names in colnames(added_margins_tbl)){
 }
 
 chisq.test(tbl2,correct=F)
+#radi pojave frekvencije manje od 5 koristimo Fisherov test
 fisher.test(tbl2)
 
 ```
