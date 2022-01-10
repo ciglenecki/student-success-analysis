@@ -167,6 +167,7 @@ for (col_names in colnames(added_margins_tbl)){
 }
 
 chisq.test(tbl2,correct=F)
+fisher.test(tbl2)
 
 ```
 
