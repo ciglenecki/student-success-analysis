@@ -81,6 +81,13 @@ students <- students %>% mutate(Mat_grade =
                                G3_mat >= 16 ~ "A")
 )
 
+students <- students %>% mutate(Por_grade =
+                     case_when(G3_por < 10 ~ "F", 
+                               G3_por >= 10 & G3_mat < 14 ~ "C",
+                               G3_por >= 14 & G3_mat < 16 ~ "B",
+                               G3_por >= 16 ~ "A")
+)
+
 students$average_grade <- (students$G3_mat + students$G3_por)/2
 
 #za edukaciju roditelja uzimamo onu koja je veća
@@ -103,27 +110,28 @@ tbl = table(students$highestparentedu, students$Mat_grade)
 print(addmargins(tbl))
 chisq.test(tbl,correct=F)
 #radi pojave frekvencije manje od 5 koristimo Fisherov test
-fisher.test(tbl2)
+fisher.test(tbl, simulate.p.value = TRUE, B = 10000)
 ```
-p-value Testa nezavisnosti iznosi manje od 0.05 stoga odbacujemo hipotezu H0, te zaključujemo da su edukacija više educiranog roditelja i završna ocjena iz matematike zavisne.
+chisq.test je nepouzdan pošto su očekivane frekvencije pojedinih  razreda manje od 5, radi toga koristimo fisher.test. p-value testa iznosi manje od 0.05 stoga odbacujemo hipotezu H0, te zaključujemo da su edukacija više educiranog roditelja i završna ocjena iz matematike zavisne.
+
+```{r}
+#H0: Ocjena iz portugala i edukacija više educiranog roditelja su nezavisna obilježja
+#H1: Ocjena iz portugala i edukacija više educiranog roditelja su zavisna obilježja
+tbl2 = table(students$highestparentedu, students$Por_grade)
+print(addmargins(tbl2))
+chisq.test(tbl2,correct=F)
+#radi pojave frekvencije manje od 5 koristimo Fisherov test
+fisher.test(tbl2, simulate.p.value = TRUE, B = 10000)
+```
+
+chisq.test je nepouzdan pošto su očekivane frekvencije pojedinih  razreda manje od 5, radi toga koristimo fisher.test. p-value testa iznosi manje od 0.05 stoga odbacujemo hipotezu H0, te zaključujemo da su edukacija više educiranog roditelja i završna ocjena iz portigala zavisne.
 
 ```{r}
 #H0: Ocjena iz matematike i edukacija majke su nezavisna obilježja
 #H1: Ocjena iz matematike i edukacija majke su zavisna obilježja
 #Koristimo test nezavisnosti
-c1 = students %>% filter(G3_mat < 10 & Medu=="1")
-c2 = students %>% filter(G3_mat >= 10 & G3_mat < 14 & Medu=="1")
-c3 = students %>% filter(G3_mat >= 14 & G3_mat < 16 & Medu=="1")
-c4 = students %>% filter(G3_mat >= 16 & Medu=="1")
-c5 = students %>% filter(G3_mat < 10 & Medu=="4")
-c6 = students %>% filter(G3_mat >= 10 & G3_mat < 14 & Medu=="4")
-c7 = students %>% filter(G3_mat >= 14 & G3_mat < 16 & Medu=="4")
-c8 = students %>% filter(G3_mat >= 16 & Medu=="4")
-tbl2 <- matrix(c(nrow(c1), nrow(c2), nrow(c3), nrow(c4), nrow(c5), nrow(c6), nrow(c7), nrow(c8)), ncol = 4, byrow=TRUE)
-colnames(tbl2) <- c('F', 'C', 'B', 'A')
-rownames(tbl2) <- c('edu=1', 'edu=4')
-tbl2 <- as.table(tbl2)
-#tbl2
+studentscopy = students %>% filter(students$Medu != "0")
+tbl2 = table(studentscopy$Medu, studentscopy$Mat_grade)
 
 added_margins_tbl = addmargins(tbl2)
 print(added_margins_tbl)
@@ -146,19 +154,8 @@ p-value Testa nezavisnosti iznosi manje od 0.05 stoga odbacujemo hipotezu H0, te
 #H0: Ocjena iz portugala i edukacija majke su nezavisna obilježja
 #H1: Ocjena iz portugala i edukacija majke su zavisna obilježja
 #Koristimo test nezavisnosti
-c1 = students %>% filter(G3_por < 10 & Medu=="1")
-c2 = students %>% filter(G3_por >= 10 & G3_por < 14 & Medu=="1")
-c3 = students %>% filter(G3_por >= 14 & G3_por < 16 & Medu=="1")
-c4 = students %>% filter(G3_por >= 16 & Medu=="1")
-c5 = students %>% filter(G3_por < 10 & Medu=="4")
-c6 = students %>% filter(G3_por >= 10 & G3_por < 14 & Medu=="4")
-c7 = students %>% filter(G3_por >= 14 & G3_por < 16 & Medu=="4")
-c8 = students %>% filter(G3_por >= 16 & Medu=="4")
-tbl2 <- matrix(c(nrow(c1), nrow(c2), nrow(c3), nrow(c4), nrow(c5), nrow(c6), nrow(c7), nrow(c8)), ncol = 4, byrow=TRUE)
-colnames(tbl2) <- c('F', 'C', 'B', 'A')
-rownames(tbl2) <- c('edu=1', 'edu=4')
-tbl2 <- as.table(tbl2)
-#tbl2
+studentscopy = students %>% filter(students$Medu != "0")
+tbl2 = table(studentscopy$Medu, studentscopy$Por_grade)
 
 added_margins_tbl = addmargins(tbl2)
 print(added_margins_tbl)
@@ -173,8 +170,6 @@ for (col_names in colnames(added_margins_tbl)){
 }
 
 chisq.test(tbl2,correct=F)
-#radi pojave frekvencije manje od 5 koristimo Fisherov test
-fisher.test(tbl2)
 
 ```
 
