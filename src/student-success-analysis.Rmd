@@ -102,31 +102,19 @@ summary(fit.multi.d)
 ```{r}
 
 students_org  %>% summarise(
-          Mean.G1_mat = mean(G1_mat),
-          Mean.G2_mat = mean(G2_mat),
           Mean.G3_mat = mean(G3_mat),
-          Mean.G1_por = mean(G1_por),
-          Mean.G2_por = mean(G2_por),
           Mean.G3_por = mean(G3_por),
             ) -> summary.result1
 summary.result1
 
 students_org  %>% summarise(
-          Med.G1_mat = median(G1_mat),
-          Med.G2_mat = median(G2_mat),
           Med.G3_mat = median(G3_mat),
-          Med.G1_por = median(G1_por),
-          Med.G2_por = median(G2_por),
           Med.G3_por = median(G3_por),
             ) -> summary.result2
 summary.result2
 
 students_org  %>% summarise(
-          Mean.G1_mat = mean(G1_mat, trim = 0.1),
-          Mean.G2_mat = mean(G2_mat, trim = 0.1),
           Mean.G3_mat = mean(G3_mat, trim = 0.1),
-          Mean.G1_por = mean(G1_por, trim = 0.1),
-          Mean.G2_por = mean(G2_por, trim = 0.1),
           Mean.G3_por = mean(G3_por, trim = 0.1),
             ) -> summary.result3
 summary.result3
@@ -141,32 +129,20 @@ Kao što je vidljivo iz podataka, učenici su malo uspješniji u glavnom jeziku 
 ```{r}
 
 students_org  %>% summarise(
-          IQR.G1_mat = IQR(G1_mat),
-          IQR.G2_mat = IQR(G2_mat),
           IQR.G3_mat = IQR(G3_mat),
-          IQR.G1_por = IQR(G1_por),
-          IQR.G2_por = IQR(G2_por),
           IQR.G3_por = IQR(G3_por),
             ) -> summary.result4
 summary.result4
 
 students_org  %>% summarise(
-          Var.G1_mat = var(G1_mat),
-          Var.G2_mat = var(G2_mat),
           Var.G3_mat = var(G3_mat),
-          Var.G1_por = var(G1_por),
-          Var.G2_por = var(G2_por),
           Var.G3_por = var(G3_por),
             ) -> summary.result5
 summary.result5
 
 
 students_org  %>% summarise(
-          sd.G1_mat = sd(G1_mat),
-          sd.G2_mat = sd(G2_mat),
           sd.G3_mat = sd(G3_mat),
-          sd.G1_por = sd(G1_por),
-          sd.G2_por = sd(G2_por),
           sd.G3_por = sd(G3_por),
             ) -> summary.result6
 summary.result6
@@ -174,6 +150,63 @@ summary.result6
 ```
 
 Ako gledamo raspršenost varijabli vidimo da ocjene iz portugalskog jezika imaju manje sve tri mjere (IQR, varijanca i standardna devijacija) vidimo da se ocjene iz portugalskog manje manje odmiču od srednje vrijednosti nego ocjene iz matematike.
+
+
+```{r}
+boxplot(students_org$G3_mat, students_org$G3_por, 
+        names = c('konačna ocjena iz matematike','konačna ocjena iz portugalskog'),
+        main='Boxplot konačnih ocjena iz matematike i portugala')
+
+```
+
+```{r}
+hist(students_org$G3_mat, 
+     breaks=seq(0, 20),
+     main='Histogram ocjena iz matematike',
+     xlab='Ocjena')
+
+
+```
+```{r}
+hist(students_org$G3_por, 
+     breaks=seq(0, 20),
+     main='Histogram ocjena iz portugalskog',
+     xlab='Ocjena')
+
+
+```
+```{r}
+
+qqnorm(students_org$G3_mat, pch = 1, frame = FALSE,main='Matematika')
+qqline(students_org$G3_mat, col = "steelblue", lwd = 2)
+
+
+```
+```{r}
+
+qqnorm(students_org$G3_por, pch = 1, frame = FALSE,main='Portugalski')
+qqline(students_org$G3_por, col = "steelblue", lwd = 2)
+
+
+```
+```{r}
+var(students_org$G3_mat)
+var(students_org$G3_por)
+
+```
+```{r}
+var.test(students_org$G3_mat, students_org$G3_por)
+```
+Zbog jako male vrijednosti odbacujemo hipotezu H0 da su varijance jednake.
+
+```{r}
+t.test(students_org$G3_mat, students_org$G3_por,
+       paired = TRUE, 
+       alt = "greater",
+       var.equal = FALSE)
+
+
+```
 
 
 ## Matej Ciglenečki
