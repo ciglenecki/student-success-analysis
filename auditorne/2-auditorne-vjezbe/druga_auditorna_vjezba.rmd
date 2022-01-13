@@ -3,9 +3,9 @@ title: "SAP - Druga auditorna vježba"
 author: "Tessa Bauman, Stjepan Begušić, David Bojanić, Tomislav Kovačević, Andro Merćep"
 date: "17.11.2021."
 output:
+  pdf_document: default
   html_document:
     df_print: paged
-  pdf_document: default
 subtitle: 'Case study *FIFA 19 data*: Statističko zaključivanje za metričke i kategorijske podatke
   podatke'
 ---
