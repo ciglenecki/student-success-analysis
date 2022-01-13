@@ -11,14 +11,20 @@ library(rlang)
 library(tidyverse)
 library(styler)
 library(fastDummies)
+library(formatR) # output width cutoff
+require(nortest) # lilliefors test
+
 styler::style_dir() # Style the current file so it's well formated
 message("Your current working directory is: ", getwd())
+knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 80), tidy = TRUE)
 ```
 
 
-## Data loading and getting the feeling of the dataset
+# Deskriptivna analiza
 
-```{r, colapse=TRUE}
+## Osnove
+Učitavamo podatke, provjeravamo kojeg je oblika skup podataka i od kojih se stupaca sastoji.
+```{r, colapse=TRUE, results='hide'}
 students_org <- readxl::read_excel("student_data.xlsx")
 
 # 370 rows, 39 columns
@@ -27,24 +33,26 @@ dim(students_org)
 # Show column names
 names(students_org)
 ```
-```{r, colapse=TRUE}
+Provjeravamo prvih par redataka podatkovnog skupa
+```{r, colapse=TRUE, results='hide'}
 # Show first few rows
 head(students_org)
 ```
 
-
-```{r, colapse=TRUE}
+Saznajemo osnovne podatke za svaki stuapc 
+```{r, colapse=TRUE, results='hide'}
 # Show details for each column
 summary(students_org)
 ```
 
-
-```{r, colapse=TRUE}
+Provjeravamo koji su stupci kojeg tipa: numerički, kategorički...
+```{r, colapse=TRUE, results='hide'}
 # Check the class of the column. "numeric", "character"...
 sapply(students_org, class)
 ```
 
-```{r, colapse=TRUE}
+Provjeravamo postoje li nevažeći podaci koji prelaze maksimalne vrijednosti specificirane u uputama o podacima. Sve vrijednosti su dobrom intervalu.
+```{r, colapse=TRUE, results='hide'}
 
 # Let's check if any columns exceed the maximum or minumum values specified in the pdf
 # This makes sense only for numerical values
@@ -53,47 +61,147 @@ colMax <- students_org %>%
   select(where(is.numeric)) %>%
   sapply(., max, na.rm = TRUE)
 colMax
-
 # Every column has normal maximum value
 ```
 
 
 
-
-```{r, colapse=TRUE}
+Izbacivanje svih NaN/NA/null vrijednosti iz podatkovnog skupa. Na sreću, takvih vrijednosti nije bilo.
+```{r, colapse=TRUE, results='hide'}
 # Are there any na values?
 students_org %>% filter(is.na(.))
 sum(apply(students_org, 2, is.nan))
-students_org %>% filter(is.null(.))
+students_org %>% filter(is.null(.)) %>% summarise(n = n())
 
 # Drop these values just in case they show up with another dataset
 # We will continue using "student" variable
 students <- students_org %>% filter_all(all_vars(!is.na(.) & !is.nan(.) & !is.null(.)))
+
+students_clean <- students
+
 ```
 
 # Petar Dragojević
+# zavisnost izmedu edukacije roditelja i uspješnosti
+```{r}
+#Mat_grade i Por_grade prebacivanje ocjena u engleski način ocjenjivanja
+students <- students %>% mutate(Mat_grade =
+                     case_when(G3_mat < 10 ~ "F", 
+                               G3_mat >= 10 & G3_mat < 14 ~ "C",
+                               G3_mat >= 14 & G3_mat < 16 ~ "B",
+                               G3_mat >= 16 ~ "A")
+)
+students <- students %>% mutate(Por_grade =
+                     case_when(G3_por < 10 ~ "F", 
+                               G3_por >= 10 & G3_mat < 14 ~ "C",
+                               G3_por >= 14 & G3_mat < 16 ~ "B",
+                               G3_por >= 16 ~ "A")
+)
+
+#MeduMod i FeduMod grupiranje edukacije roditelja u veće podgrupe 
+students <- students %>% mutate(MeduMod =
+                     case_when(Medu == "0" | Medu == "1" | Medu == "2" ~ "0", 
+                               Medu == "3" ~ "1",
+                               Medu == "4" ~ "2")
+)
+students <- students %>% mutate(FeduMod =
+                     case_when(Fedu == "0" | Medu == "1" | Fedu == "2" ~ "0", 
+                               Fedu == "3" ~ "1",
+                               Fedu == "4" ~ "2")
+)
+
+#za edukaciju roditelja uzimamo onu koja je veća
+students$highestparentedu <- pmax(students$MeduMod, students$FeduMod)
+
+boxplot(students$G3_mat[students$MeduMod=="0"], students$G3_mat[students$MeduMod=="1"], students$G3_mat[students$MeduMod=="2"], students$G3_mat[students$FeduMod=="0"], students$G3_mat[students$FeduMod=="1"], students$G3_mat[students$FeduMod=="2"], names = c("M/low", "M/middle", "M/high", "F/low", "F/middle", "F/high"),xlab="Mother/Father education",ylab="Mat final grade")
+
+boxplot(students$G3_por[students$MeduMod=="0"], students$G3_por[students$MeduMod=="1"], students$G3_por[students$MeduMod=="2"], students$G3_por[students$FeduMod=="0"], students$G3_por[students$FeduMod=="1"], students$G3_por[students$FeduMod=="2"], names = c("M/low", "M/middle", "M/high", "F/low", "F/middle", "F/high"),xlab="Mother/Father education",ylab="Por final grade")
+
+boxplot(students$G3_mat[students$highestparentedu=="0"], students$G3_mat[students$highestparentedu=="1"], students$G3_mat[students$highestparentedu=="2"], names = c("low", "middle", "high"),xlab="Highest parent education",ylab="Mat final grade")
+
+boxplot(students$G3_por[students$highestparentedu=="0"], students$G3_por[students$highestparentedu=="1"], students$G3_por[students$highestparentedu=="2"], names = c("low", "middle", "high"),xlab="Highest parent education",ylab="Por final grade")
+
+```
 
 ```{r}
-students$average_grade <- (students$G3_mat + students$G3_por)/2
+#H0: Ocjena iz matematike i edukacija više educiranog roditelja su nezavisna obilježja
+#H1: Ocjena iz matematike i edukacija više educiranog roditelja su zavisna obilježja
 
-fit.studytime = lm(average_grade~studytime,data=students)
-plot(students$studytime,students$average_grade)
-lines(students$studytime,fit.studytime$fitted.values,col='red')
-
-#Pearsonov korelacijski koeficijent
-cor(students$studytime,students$average_grade)
-
-cor.test(students$studytime,students$average_grade)
-
-summary(fit.studytime)
-
-#procjena modela s dummy varijablama
-students.d = dummy_cols(students,select_columns='studytime')
-
-#procjena modela s dummy varijablama
-fit.multi.d = lm(average_grade ~ studytime_1 + studytime_2, students.d)
-summary(fit.multi.d)
+tbl = table(students$highestparentedu, students$Mat_grade)
+added_margins_tbl = addmargins(tbl)
+print(added_margins_tbl)
+chisq.test(tbl,correct=F)
 ```
+p-value testa iznosi manje od 0.05 stoga odbacujemo hipotezu H0, te zaključujemo da su edukacija više educiranog roditelja i završna ocjena iz matematike zavisne.
+
+```{r}
+#H0: Ocjena iz matematike i edukacija majke su nezavisna obilježja
+#H1: Ocjena iz matematike i edukacija majke su zavisna obilježja
+tbl = table(students$MeduMod, students$Mat_grade)
+added_margins_tbl = addmargins(tbl)
+print(added_margins_tbl)
+chisq.test(tbl,correct=F)
+
+#H0: Ocjena iz matematike i edukacija oca su nezavisna obilježja
+#H1: Ocjena iz matematike i edukacija oca su zavisna obilježja
+tbl2 = table(students$FeduMod, students$Mat_grade)
+added_margins_tbl2 = addmargins(tbl2)
+print(added_margins_tbl2)
+chisq.test(tbl2,correct=F)
+```
+
+p-value Testa nezavisnosti iznosi manje od 0.05 stoga odbacujemo hipotezu H0, te zaključujemo da su edukacija majke i završna ocjena iz matematike zavisne, dok do tog zaključka ne možemo doći u slučaju edukacije oca.
+
+```{r}
+#H0: Ocjena iz portugala i edukacija više educiranog roditelja su nezavisna obilježja
+#H1: Ocjena iz portugala i edukacija više educiranog roditelja su zavisna obilježja
+tbl = table(students$highestparentedu, students$Por_grade)
+added_margins_tbl = addmargins(tbl)
+print(added_margins_tbl)
+chisq.test(tbl,correct=F)
+
+#očekivane frekvencije svih razreda moraju biti veće ili jednake 5
+for (col_names in colnames(added_margins_tbl)){
+  for (row_names in rownames(added_margins_tbl)){
+    if (!(row_names == 'Sum' | col_names == 'Sum') ){
+      cat('Očekivane frekvencije za razred ',col_names,'-',row_names,': ',(added_margins_tbl[row_names,'Sum'] * added_margins_tbl['Sum',col_names]) / added_margins_tbl['Sum','Sum'],'\n')
+    }
+  }
+}
+#Vidimo da postoje očekivane frekvencije manje od 5 pa koristimo fisher.test() umjesto chiq.test()
+fisher.test(tbl)
+```
+
+chisq.test je nepouzdan pošto su očekivane frekvencije pojedinih  razreda manje od 5, radi toga koristimo fisher.test. p-value Fesherovog testa iznosi manje od 0.05 stoga odbacujemo hipotezu H0, te zaključujemo da su edukacija više educiranog roditelja i završna ocjena iz portigala zavisne.
+
+```{r}
+#H0: Ocjena iz portugala i edukacija majke su nezavisna obilježja
+#H1: Ocjena iz portugala i edukacija majke su zavisna obilježja
+tbl = table(students$MeduMod, students$Por_grade)
+added_margins_tbl = addmargins(tbl)
+print(added_margins_tbl)
+chisq.test(tbl,correct=F)
+
+#H0: Ocjena iz portugala i edukacija oca su nezavisna obilježja
+#H1: Ocjena iz portugala i edukacija oca su zavisna obilježja
+tbl2 = table(students$FeduMod, students$Por_grade)
+added_margins_tbl2 = addmargins(tbl2)
+print(added_margins_tbl2)
+chisq.test(tbl2,correct=F)
+#očekivane frekvencije svih razreda moraju biti veće ili jednake 5
+for (col_names in colnames(added_margins_tbl2)){
+  for (row_names in rownames(added_margins_tbl2)){
+    if (!(row_names == 'Sum' | col_names == 'Sum') ){
+      cat('Očekivane frekvencije za razred ',col_names,'-',row_names,': ',(added_margins_tbl2[row_names,'Sum'] * added_margins_tbl2['Sum',col_names]) / added_margins_tbl2['Sum','Sum'],'\n')
+    }
+  }
+}
+#Vidimo da postoje očekivane frekvencije manje od 5 pa koristimo fisher.test() umjesto chiq.test()
+fisher.test(tbl)
+```
+
+p-value Testa nezavisnosti iznosi manje od 0.05 stoga odbacujemo hipotezu H0, te zaključujemo da su edukacija majke i završna ocjena iz portugala zavisne, kod usporedbe s edukacijom oca koristimo Fisherov test gdje je p-value manji od 0.05 pa odbacujemo H0 i zaključujemo da su edukacija oca i završna ocjena iz portugala zavisne.
+
 
 ## Tomislav Prhat
 
@@ -212,16 +320,142 @@ Zbog jako male p-vrijednosti odbacujemo hipotezu H0 da su prosjeci ocjena jednak
 
 
 ## Matej Ciglenečki
-```{r, colapse=TRUE}
-# Show average grade for all schools
 
+```{r, colapse=TRUE, eval=FALSE, echo=FALSE}
+students$test <- students$absences_mat
+
+students$test  <- students %>% mutate(quantile = ntile(test,5))%>%group_by(quantile) %>% select(quantile)
+boxplot(students$G3_mat ~ unlist(students$test))
+```
+
+# Kako vrijeme putovanja do škole utjeće na uspjeh učenika?
+
+Na ovo pitanje odgovirit ćemo ANOVA-om. 
+Pretpostavke ANOVA-e su:
+
+* nezavisnost pojedinih podataka u uzorcima
+* normalna razdioba podataka
+* homogenost varijanci među populacijama
+
+Postavljamo hipotezu H0 koja glasi, srednja vrijednost grupa su podjednake.
+$$H_{0}: \mu_{1}=\mu_{2}=\ldots=\mu_{k}$$
+$$H_{1}: \neg H_{0}$$
+
+S obizrom da se radi o različitim školama i različitim predmetima možemo pretpostaviti nezavisnost ocjena.
+
+Ukoliko nakon provedbe ANOVA-e odbacimo H0 hipotezu možemo zaključiti da su srednje vrijednosti međusobno različite, tj. da vrijeme putovanje utječe na uspjeh učenika.
+
+## Obrada kategoričkih stupaca
+
+Kao grupe koristiti će se vrijednosti iz stupca `traveltime` Prvo je potrebno pretvoriti stupac `traveltime` u kategoričke podatke (s poretkom). `traveltime` se sastoji od 4 mogućih vrijednosti koje definiraju potrebno vrijeme od škole do doma:
+
+* `<` 15min
+* 15 - 30 min
+* 30 - 60 min
+* `>` 60 min
+
+Nadalje, zadnju kategoriju (60min+) spojiti ćemo sa predzadnjom kategorijom (30-60min) zbog toga što se u zadnjoj kategoriji nalaze samo 8 podataka dok se u preostalim kategorijama nalazi puno veći broj podataka.
+
+```{r, colapse=TRUE}
+count(students, students$traveltime)
+students <- students_clean
+students$traveltime <- factor(students$traveltime, ordered=TRUE, labels=c("0 - 15 min", "15 - 30 min", "> 30 min", "> 30 min"))
+```
+
+Za uspjeh koristiti ćemo zboj varijabli `G[1,2,3]_mat` i `G[1,2,3]_por` koji ćemo spremitit u novu varijablu `G_total`.
+
+```{r, colapse=TRUE, results='hide'}
+students$G3_total <- students$G3_mat + students$G3_por
+students$G2_total <- students$G2_mat + students$G2_por
+students$G1_total <- students$G1_mat + students$G1_por
+students$G_total <- students$G1_total + students$G2_total + students$G3_total
+```
+
+
+ANOVA je robustna na blaga odstupanja što se tiče normalnosti. Svejedno, testirati ćemo normalnost varijable `G_total` nad cijelim podatkovnim skupom, a zatim nad  `G_total` za svaku pojedinu grupu `traveltime`-a. 
+
+
+```{r, colapse=TRUE, out.width="80%"}
+model = lm(students$G_total ~ students$traveltime)
+
+par(mfrow=c(1,2)) # 2 plots in 1 row
+
+timeperiod = '0 - 15 min'
+data <- rstandard(model)[students$traveltime==timeperiod]
+qqnorm(data, pch = 1, frame = FALSE, main = timeperiod)
+qqline(data)
+hist(data, main = timeperiod)
+lillie.test(data)["p.value"]
+ks.test(data, 'pnorm', mean=mean(data), sd=sd(data))["p.value"]
+
+timeperiod = '15 - 30 min'
+data <- rstandard(model)[students$traveltime==timeperiod]
+qqnorm(data, pch = 1, frame = FALSE, main = timeperiod)
+qqline(data)
+hist(data, main = timeperiod)
+lillie.test(data)["p.value"]
+ks.test(data, 'pnorm', mean=mean(data), sd=sd(data))["p.value"]
+
+timeperiod = "> 30 min"
+data <- rstandard(model)[students$traveltime==timeperiod]
+qqnorm(data, pch = 1, frame = FALSE, main = timeperiod)
+qqline(data)
+hist(data, main = timeperiod)
+lillie.test(data)["p.value"]
+ks.test(data, 'pnorm', mean=mean(data), sd=sd(data))["p.value"]
+```
+
+Na svakom grafu možemo vidjeti da podaci uglavnom prate normalnu distribuciju uz manji broj stršećih vrijednosti (lijevi rep). Nadalje, `p` vrijednosti Lillieforsovog testa nisu uvijek iznad 0.05 međutim za sve Kolmogorov–Smirnov testove `p` vrijednosti su iznad 0.05.
+
+Lilliefors koristimo ako nam nije poznata varijanca i srednja vrijednost populacije, što je s ovim podacima i slučaj. Poznato je da Lilliefors konzervativniji i da odbacuje hipotezu H0 češće nego Kolmogorov–Smirnov.
+
+S obzirom na manja odstupanja, ne toliko male `p` vrijednosti i grafički izgled `qqnorm`-a i histograma pretpostaviti ćemo da su podaci uzrokovani iz normalne distribucije. 
+
+## Homogenost varijanci - Bartlettov test
+
+Prvo je potrebno postaviti hipoteze H0 i H1:
+$$H_{0}: \sigma_{1}^{2}=\sigma_{2}^{2}=\ldots=\sigma_{k}^{2}$$
+$$H_{1}: \neg H_{0}$$
+
+```{r}
+var(students$G_total[students$traveltime=="> 30 min"])
+var(students$G_total[students$traveltime=='15 - 30 min'])
+var(students$G_total[students$traveltime=="> 30 min"])
+bartlett.test(students$G_total ~ students$traveltime)
+```
+Vidimo da su vrijednosti varijance slične. S obzirom da je `p` vrijednost testa veća od 0.05 ne odbacujemo H0 čime zadovoljavamo ANOVA pretpostavku o homogenosti varijanca.
+
+## ANOVA - Jesu li srednje vrijednosti za različite grupe drugačije?
+
+$$H_{0}: \mu_{1}=\mu_{2}=\ldots=\mu_{k}$$
+$$H_{1}: \neg H_{0}$$
+
+```{r}
+boxplot(students$G_total ~ students$traveltime)
+```
+Grafički možemo pretpostaviti da se vrijeme putovanja utječe na uspjeh učenika. Naravno, ANOVA-om je potrebno provjeritit koliko je ta razlika statistički značajna.
+
+```{r}
+model = lm(students$G_total ~ students$traveltime)
+anova(model)
+```
+
+ANOVA nam govori da postoji razlika između grupa `traveltime`. Iako nije strogo značajna i dalje se radi o značajnoj `p` vrijednosti koja se nalazi između `0.001` i `0.01`. Možemo zaključiti da za različite grupe vremena putovanja imaju utjecaj na učenikov uspjeh.
+
+# Koja škola je bolja u matematici a koja u portugalskom?
+
+Na ovo pitanje odgovoriti ćemo provedbom t-testa koristeći 4 različita podatkovna skupa. Razdvajanje podatkovnog skupa na dvije škole (GP, MS) te na dva predmeta (matematika i portugalski) dobivamo sljedeće podatkovne skupove: `gp_mat`, `gp_por`, `ms_mat`, `ms_por`
+
+```{r, colapse=TRUE, results='hide'}
+# Show average grade for all schools
 schools <- students %>%
   select("school") %>%
   distinct(.)
 schools # [GP, MS]
 subject_final_grade_names <- names(students)[grepl("G3", names(students))]
-subject_final_grade_names
-students_final_grade <- students %>% select("school", subject_final_grade_names)
+
+# all_of Note: Using an external vector in selections is ambiguous. Use `all_of(vars)` instead of `vars` to silence this message.
+students_final_grade <- students %>% select("school", all_of(subject_final_grade_names))
 
 # Select only the subject grade and school
 gp_mat <- students_final_grade %>%
@@ -236,27 +470,34 @@ ms_mat <- students_final_grade %>%
 ms_por <- students_final_grade %>%
   filter(school == "MS") %>%
   select(G3_por, school)
+```
 
+```{r, echo=FALSE, results='hide' }
 # Rename all columns to "grade"
 gp_mat <- gp_mat %>% rename(grade = G3_mat)
 gp_por <- gp_por %>% rename(grade = G3_por)
 ms_mat <- ms_mat %>% rename(grade = G3_mat)
 ms_por <- ms_por %>% rename(grade = G3_por)
+```
 
 
+```{r, colapse=TRUE, echo=FALSE}
 # TODO: can this data be grouped and used dynamically? (support multiple schools and mutliple subjects)
-
 # scale_this <- function(x){
 #   (x - mean(x, na.rm=TRUE)) / sd(x, na.rm=TRUE)
 # }
-
 # gp_mat_scaled <- gp_mat %>% mutate(G3_mat = scale_this(G3_mat))
 # gp_por_scaled <- gp_por %>% mutate(G3_por = scale_this(G3_por))
 # ms_mat_scaled <- ms_mat %>% mutate(G3_mat = scale_this(G3_mat))
 # ms_por_scaled <- ms_por %>% mutate(G3_por = scale_this(G3_por))
 ```
 
-```{r, colapse=TRUE}
+## Prikaz relativnih frekvencija predmeta i škola
+
+Iz grafa relativne frekvencije možemo usporediti vertikalne crte koje određuju srednju vrijednost ocjene za pojedinu školu i također dobiti osjećaj za normalnost podataka. Konstruirati ćemo jednosmjerni T-test a alternativa će ići u korist škole koja ima veću srednju vrijednost čime ćemo provjeriti je li ta škola statistički značajno bolja u matematici/portugalskom.
+
+## Matematika - prikaz relativnih frekvencija i srednjih vrijednosti
+```{r, colapse=TRUE, echo=FALSE}
 # Plot math -- final grade
 ggplot(gp_mat, aes(x = grade, y = (..count.. / sum(..count..)))) +
   geom_histogram(bins = 20, aes(color = school, fill = school), alpha = 0.5) +
@@ -266,7 +507,12 @@ ggplot(gp_mat, aes(x = grade, y = (..count.. / sum(..count..)))) +
   xlab("Grade") +
   ylab("Relative frequency") +
   labs(title = "Mathematics - final grade for each school")
+```
+Na grafu za matematiku vidi se da škola `GP` ima veću srednju vrijednost od škole `MS`
 
+## Portugalski - prikaz relativnih frekvencija i srednjih vrijednosti
+
+```{r, colapse=TRUE, echo=FALSE}
 # Plot portug -- final grade
 ggplot(gp_por, aes(x = grade, y = (..count.. / sum(..count..)))) +
   geom_histogram(bins = 20, aes(color = school, fill = school), alpha = 0.5) +
@@ -277,75 +523,144 @@ ggplot(gp_por, aes(x = grade, y = (..count.. / sum(..count..)))) +
   ylab("Relative frequency") +
   labs(title = "Portuguese - final grade for each school")
 ```
+Na grafu za portugalski vidi se da škola `GP` ima veću srednju vrijednost od škole `MS`
 
-```{r, colapse=TRUE}
-## Additional check for normailty is done with qqnorm
+## Provjera normalnosti
+
+```{r,echo=FALSE,  eval=FALSE, results='hide'}
+### Ignore this block
+curve(dnorm,xlim=c(-4,4)) #Normal
+curve(dchisq(x,df=1),xlim=c(0,30)) #Chi-square with 1 degree of freedom
+
+hist(colMeans(sapply(rep(10,100),rnorm)),xlab='Sample mean',main='')
+hist(colMeans(sapply(rep(10,100),rchisq,df=1)),xlab='Sample mean',main='')
+
+qqp(colMeans(sapply(rep(10,100),rnorm)),xlab='Sample mean',main='')
+qqp(colMeans(sapply(rep(10,100),rchisq,df=1)),xlab='Sample mean',main='')
+
+x <- seq(-15, 15, by=0.001)
+y <- rnorm(x, mean(x), sd(x))
+x2 <- rnorm(5000, -1)
+y1 <- runif(30000)
+y1
+x2
+hist(y1, breaks=50)
+hist(x2, breaks=50)
+
+hist(y, breaks=50)
+ks.test(x,y,"pgamma")
+lillie.test(y)
+```
+Normalnost se provjerva na više načina. U sljedećim koracima biti će prikazani `qqnorm` grafovi i provedeni Lilliefors i Kolmogorov-Smirnov testovi na temelju kojih će se pretpostaviti (ne)normalnost.
+```{r, colapse=TRUE, results='hide'}
+nrow(gp_mat)
+nrow(gp_por)
+nrow(ms_mat)
+nrow(ms_por)
+```
+`n` - broj podataka za matematiku je `331` a za portugalski `39`
+
+```{r, colapse=TRUE, out.width="50%"}
 qqnorm(gp_mat$grade, pch = 1, frame = FALSE, main = "GP school math")
+qqline(gp_mat$grade)
+lillie.test(gp_mat$grade)["p.value"]
+ks.test(gp_mat$grade, "pnorm", mean(gp_mat$grade), sd(gp_mat$grade))["p.value"]
+
 qqnorm(gp_por$grade, pch = 1, frame = FALSE, main = "GP school portuguese")
+qqline(gp_por$grade)
+lillie.test(gp_por$grade)["p.value"]
+ks.test(gp_por$grade, "pnorm", mean(gp_por$grade), sd(gp_por$grade))["p.value"]
+
 qqnorm(ms_mat$grade, pch = 1, frame = FALSE, main = "MS school math")
+qqline(ms_mat$grade)
+lillie.test(ms_mat$grade)["p.value"]
+ks.test(ms_mat$grade, "pnorm", mean(ms_mat$grade), sd(ms_mat$grade))["p.value"]
+
 qqnorm(ms_por$grade, pch = 1, frame = FALSE, main = "MS school portuguese")
+qqline(ms_por$grade)
+lillie.test(ms_por$grade)["p.value"]
+ks.test(ms_por$grade, "pnorm", mean(ms_por$grade), sd(ms_por$grade))["p.value"]
 ```
 
+Repovi su prisutni na lijevoj strani podataka zbog čega je `p` vrijednost skoro uvijek manja od 0.05 za Kolmogorov-Smirnov i Lillieforsov test. Grafički, na temelju rezultata ordeđujemo da za sve skupove vrijedi da proizlaze iz normalne distribucije ali s opaskom da postoje stršeće vrijednosti na lijeovj strani distribucije. 
 
-# F-test of variance equality
-Argument order for F-test of variance equality doesn't matter but in general:
+## F-test - test o jednakosti varijanca
+
+Važno je napomenuti da je test o varijanci iznimno osjetljiv na normalnost. Test će biti proveden zbog vježbe ali njegov **rezultat se neće uzeti u obzir** jer podaci nisu normalno distribuirani.
+
+$p\ -$ vjerojatnost da pod H0 dobijemo vrijednost koja je jednako ili više ekstremna nego vrijednost koji bi dobili izračunom iz uzorka kojeg imamo
+
+Ako je $p < \alpha$, odbacujemo hipotezu $H0$ u korist hipoteze $H1$:
+
+* pada u desni ili lijevi rep => odbacivanje
+
+$$H_{0}: \sigma_{1}^{2}=\sigma_{2}^{2}$$
+$$H_{1}: \neg H_{0}$$
+
+Poredak argumenata za `var.test` nije bitna ali generalno vrijedi:
 $$\frac{\sigma_{1}^2}{\sigma_{2}^2},\quad\sigma_{1}^2 > \sigma_{2}^2$$
 
-$p \textemdash$ probability that under the null hypothesis of obtaining the value (of the test statistic) that's as extreme (or more extreme) than the value we got computed from the sample we have
 
 
-If $p < \alpha$ we are rejecting the hypothesis $H0$ in favor of $H1$
-  - falls under right tail => rejection
+```{r, colapse=TRUE, echo=FALSE}
+# This part won't be outputed as code in PDF
+cat_reject_h0 <- function(prefix_message, is_h0_rejected) {
+  cat(prefix_message, "\n")
+  if (is_h0_rejected) cat("\tOdbacujemo hipotezu H0 u korist hipoteze H1\n") else cat("\tNe odbacujemo hipotezu H0\n")
+}
+```
 
 ```{r, colapse=TRUE}
-
-# Let's check variances just as a sanity check:
 cat("Mathematics variances", var(gp_mat$grade), var(ms_mat$grade))
 cat("Portugeuse variances", var(gp_por$grade), var(ms_por$grade))
+```
+Na prvi pogled čini se da će H0 hipoteza za portugalski biti odbačena zbog toga što su varijance značajno drugačije. Potrebno je provesti f-test da se uvjerimo da se radi o statistički značajnoj razlici varijanci.
 
-# At first glance, it seems that we will probably reject H0 hypothesis for F-test in the case of Portuguese, as variances are vastly different.
+Konstruirajmo i provedimo testove o varijanci:
+```{r, colapse=TRUE, results='hide'}
 alpha <- 0.05
 
 # H0 - Variance of GP_MAT and MS_MAT are equal
 # H1 - not H0
 mat_f_test <- var.test(gp_mat$grade, ms_mat$grade, alternative = "two.sided") # F = 1.0752, p = 0.817
-mat_f_test
 
 # H0 - Variance of GP_POR and MS_MAT are equal
 # H1 - not H0
-por_f_test <- var.test(gp_por$grade, ms_por$grade, alternative = "two.sided") # F = 1.0752, p = 0.817
-por_f_test
+por_f_test <- var.test(gp_por$grade, ms_por$grade, alternative = "two.sided") # F = 0.30871, p = 1.217e-08
 ```
 
 ```{r, colapse=TRUE}
-# This part won't be outputed as code in PDF
-
-cat_reject_h0 <- function(prefix_message, is_h0_rejected) {
-  cat(prefix_message, "\n")
-  if (is_h0_rejected) cat("\tWe are rejecting the H0 hypothesis in favor of hypothesis H1\n") else cat("\tWe are not rejecting the H0 hypothesis\n")
-}
-
 var_equal_mat <- if (mat_f_test$p.value < alpha) FALSE else TRUE
-cat_reject_h0("For mathemathics variance test:", !var_equal_mat)
+cat_reject_h0("Matematika - test o jednakosti varijanca:", !var_equal_mat)
 
 var_equal_por <- if (por_f_test$p.value < alpha) FALSE else TRUE
-cat_reject_h0("For Portuguese variance test:", !var_equal_por)
+cat_reject_h0("Portugalski - test o jednakosti varijanca:", !var_equal_por)
 ```
 
-# T-test for grade equality
+
+## T-test - testiranje jednakosti srednje vrijednosti ocjena za dvije škole uz nepoznate varijance
+
+Uz to što je `n` veći od 30 za oba podatkovna skupa i uz činjenicu da je t-test robustan na (ne)normalnost provodimo t-test srednje vrijednosti za oba predmeta.
+
+Zbog prethodno dobivenih srednje vrijednosti o ocjenama (koje idu u korist škole `GP`) postavljena je jednosmjerna alternativa hipoteza.
+
+Ponovno, zbog toga što test o varijanci nije robustan na nenormalnost pretpostaviti ćemo da vraijance uzoraka nisu jednake.
+
 ```{r, collapse=TRUE}
-var_equal_mat
-var_equal_por
 
 # H0 - GP school has equal grades to in mathematics to MS (GP=MS)
 # H1 - GP>MS
-mat_t_test <- t.test(gp_mat$grade, ms_mat$grade, alt = "greater", var.equal = var_equal_mat)
+mat_t_test <- t.test(gp_mat$grade, ms_mat$grade, alt = "greater", var.equal = FALSE)
 is_gp_mat_better <- if (mat_t_test$p.value < alpha) TRUE else FALSE
-cat_reject_h0("Mathemathics T-test test:", is_gp_mat_better)
+cat_reject_h0("Matematika - t-test:", is_gp_mat_better)
 
 # H0 - GP school has equal grades to in Portuguese to MS (GP=MS)
 # H1 - GP>MS
-por_t_test <- t.test(gp_por$grade, ms_por$grade, alt = "greater", var.equal = var_equal_por)
+por_t_test <- t.test(gp_por$grade, ms_por$grade, alt = "greater", var.equal = FALSE)
 is_gp_por_better <- if (por_t_test$p.value < alpha) TRUE else FALSE
-cat_reject_h0("Portuguese T-test test:", is_gp_por_better)
+cat_reject_h0("Portugalski t-test:", is_gp_por_better)
 ```
+
+Za matematiku, nismo odbacili hipotezu H0 i zbog čega ne možemo zaključiti da škola GP ima bolje ocjene iz matematike od škole MS.
+
+Za portugalski, odbacujemo hipotezu H0 u korist hipoteze H1 i zaključujemo da je škola `GP` ima bolje ocjene iz portgualskog od škole `MS`.
