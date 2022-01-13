@@ -308,8 +308,7 @@ var.test(students_org$G3_mat, students_org$G3_por)
 Zbog jako male vrijednosti odbacujemo hipotezu H0 da su varijance dva uzorka jednake.
 
 ```{r}
-t.test(students_org$G3_por, students_org$G3_mat,
-       paired = TRUE, 
+t.test(students_org$G3_por, students_org$G3_mat, 
        alternative = "greater",
        var.equal = FALSE)
 
