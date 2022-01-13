@@ -57,7 +57,7 @@ if P = 0 then data comes from different distributions
 - [ ] 
 - [ ] 
 - [ ] 
-- [ ] Question (Matej): Alcohol
+- [ ] Question (Matej): Does transport affect success
 - [ ] Question (Tomislav): Are students more successful in maths or the main subject?
 - [ ] Question (Matej): Which schools perform better than other schools in which subjects?
   - [ ] Create a "matrix" of schools/subjects
