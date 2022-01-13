@@ -197,16 +197,18 @@ var(students_org$G3_por)
 ```{r}
 var.test(students_org$G3_mat, students_org$G3_por)
 ```
-Zbog jako male vrijednosti odbacujemo hipotezu H0 da su varijance jednake.
+Zbog jako male vrijednosti odbacujemo hipotezu H0 da su varijance dva uzorka jednake.
 
 ```{r}
-t.test(students_org$G3_mat, students_org$G3_por,
+t.test(students_org$G3_por, students_org$G3_mat,
        paired = TRUE, 
-       alt = "greater",
+       alternative = "greater",
        var.equal = FALSE)
 
 
 ```
+Zbog jako male p-vrijednosti odbacujemo hipotezu H0 da su prosjeci ocjena jednaki u korist hipoteze H1 da je prosjek ocjena iz portugalskog značajno veći od prosjeka ocjena iz matematike. 
+
 
 
 ## Matej Ciglenečki
