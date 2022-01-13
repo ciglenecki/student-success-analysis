@@ -34,6 +34,12 @@ Linux - R installation (tidyverse requires these dependencies):
 3. Run the first chunk in the file (Ctrl + Shift + Enter) which contains `library` function
 4. Popup will open asking you to install the packets, press yes. This took me **20 minutes**
 
+# Notes:
+## Rmd
+hiding chunks https://bookdown.org/yihui/rmarkdown-cookbook/hide-one.html
+
+KS - if P = 1 that means that data surley come from same distribution
+if P = 0 then data comes from different distributions
 
 # 📋 Todo:
 
@@ -51,10 +57,19 @@ Linux - R installation (tidyverse requires these dependencies):
 - [ ] 
 - [ ] 
 - [ ] 
+- [ ] Question (Matej): Alcohol
 - [ ] Question (Tomislav): Are students more successful in maths or the main subject?
 - [ ] Question (Matej): Which schools perform better than other schools in which subjects?
   - [ ] Create a "matrix" of schools/subjects
   - [ ] Later, you can sort for a specific subject, e.g. "Math" and check top 5 schools
+  - [ ] T test - pair
+  - [ ] KS test liliforce za normalizacijski test
+    - check for how many values is liliforce consistent. If your you have enough values use the test. If not, assume non-normality on data
+    - možemo ubaciti testove ali i dalje gledamo podatke kao ne-normalne 
+      - mozda izbaciti F test jer on nije robustan na nenormalne podatke
+    - pa zbog toga korsititi T test gdje su varijance nejednake
+
+
 - [ ] Question (Magda): Which variable is the best predictor of success on a specific subject
   - [ ] Later, create add top predicting variables for all subjects
 - [ ] Question (Petar): How does student's time put into studying result in the final grade? 
