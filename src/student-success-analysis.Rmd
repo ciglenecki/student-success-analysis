@@ -74,13 +74,13 @@ students <- students_org %>% filter_all(all_vars(!is.na(.) & !is.nan(.) & !is.nu
 # Petar Dragojević
 # zavisnost izmedu edukacije roditelja i uspješnosti
 ```{r}
+#Mat_grade i Por_grade prebacivanje ocjena u engleski način ocjenjivanja
 students <- students %>% mutate(Mat_grade =
                      case_when(G3_mat < 10 ~ "F", 
                                G3_mat >= 10 & G3_mat < 14 ~ "C",
                                G3_mat >= 14 & G3_mat < 16 ~ "B",
                                G3_mat >= 16 ~ "A")
 )
-
 students <- students %>% mutate(Por_grade =
                      case_when(G3_por < 10 ~ "F", 
                                G3_por >= 10 & G3_mat < 14 ~ "C",
@@ -88,51 +88,67 @@ students <- students %>% mutate(Por_grade =
                                G3_por >= 16 ~ "A")
 )
 
+#MeduMod i FeduMod grupiranje edukacije roditelja u veće podgrupe 
+students <- students %>% mutate(MeduMod =
+                     case_when(Medu == "0" | Medu == "1" | Medu == "2" ~ "0", 
+                               Medu == "3" ~ "1",
+                               Medu == "4" ~ "2")
+)
+students <- students %>% mutate(FeduMod =
+                     case_when(Fedu == "0" | Medu == "1" | Fedu == "2" ~ "0", 
+                               Fedu == "3" ~ "1",
+                               Fedu == "4" ~ "2")
+)
+
 #za edukaciju roditelja uzimamo onu koja je veća
-students$highestparentedu <- pmax(students$Medu, students$Fedu)
+students$highestparentedu <- pmax(students$MeduMod, students$FeduMod)
 
-boxplot(students$G3_mat[students$Medu=="0"], students$G3_mat[students$Medu=="1"], students$G3_mat[students$Medu=="2"], students$G3_mat[students$Medu=="3"], students$G3_mat[students$Medu=="4"], students$G3_mat[students$Fedu=="0"], students$G3_mat[students$Fedu=="1"], students$G3_mat[students$Fedu=="2"], students$G3_mat[students$Fedu=="3"], students$G3_mat[students$Fedu=="4"], names = c("M/0", "M/1", "M/2", "M/3", "M/4", "F/0", "F/1", "F/2", "F/3", "F/4"),xlab="Mother/Father education",ylab="Mat final grade")
+boxplot(students$G3_mat[students$MeduMod=="0"], students$G3_mat[students$MeduMod=="1"], students$G3_mat[students$MeduMod=="2"], students$G3_mat[students$FeduMod=="0"], students$G3_mat[students$FeduMod=="1"], students$G3_mat[students$FeduMod=="2"], names = c("M/low", "M/middle", "M/high", "F/low", "F/middle", "F/high"),xlab="Mother/Father education",ylab="Mat final grade")
 
-boxplot(students$G3_por[students$Medu=="0"], students$G3_por[students$Medu=="1"], students$G3_por[students$Medu=="2"], students$G3_por[students$Medu=="3"], students$G3_por[students$Medu=="4"], students$G3_por[students$Fedu=="0"], students$G3_por[students$Fedu=="1"], students$G3_por[students$Fedu=="2"], students$G3_por[students$Fedu=="3"], students$G3_por[students$Fedu=="4"], names = c("M/0", "M/1", "M/2", "M/3", "M/4", "F/0", "F/1", "F/2", "F/3", "F/4"),xlab="Mother/Father education",ylab="Por final grade")
+boxplot(students$G3_por[students$MeduMod=="0"], students$G3_por[students$MeduMod=="1"], students$G3_por[students$MeduMod=="2"], students$G3_por[students$FeduMod=="0"], students$G3_por[students$FeduMod=="1"], students$G3_por[students$FeduMod=="2"], names = c("M/low", "M/middle", "M/high", "F/low", "F/middle", "F/high"),xlab="Mother/Father education",ylab="Por final grade")
 
-boxplot(students$G3_mat[students$highestparentedu=="0"], students$G3_mat[students$highestparentedu=="1"], students$G3_mat[students$highestparentedu=="2"], students$G3_mat[students$highestparentedu=="3"], students$G3_mat[students$highestparentedu=="4"], names = c("none", "primary", "5th to 9th grade", "secondary", "higher"),xlab="Highest parent education",ylab="Mat final grade")
+boxplot(students$G3_mat[students$highestparentedu=="0"], students$G3_mat[students$highestparentedu=="1"], students$G3_mat[students$highestparentedu=="2"], names = c("low", "middle", "high"),xlab="Highest parent education",ylab="Mat final grade")
 
-boxplot(students$G3_por[students$highestparentedu=="0"], students$G3_por[students$highestparentedu=="1"], students$G3_por[students$highestparentedu=="2"], students$G3_por[students$highestparentedu=="3"], students$G3_por[students$highestparentedu=="4"], names = c("none", "primary", "5th to 9th grade", "secondary", "higher"),xlab="Highest parent education",ylab="Por final grade")
+boxplot(students$G3_por[students$highestparentedu=="0"], students$G3_por[students$highestparentedu=="1"], students$G3_por[students$highestparentedu=="2"], names = c("low", "middle", "high"),xlab="Highest parent education",ylab="Por final grade")
 
 ```
 
 ```{r}
 #H0: Ocjena iz matematike i edukacija više educiranog roditelja su nezavisna obilježja
 #H1: Ocjena iz matematike i edukacija više educiranog roditelja su zavisna obilježja
+
 tbl = table(students$highestparentedu, students$Mat_grade)
-print(addmargins(tbl))
+added_margins_tbl = addmargins(tbl)
+print(added_margins_tbl)
 chisq.test(tbl,correct=F)
-#radi pojave frekvencije manje od 5 koristimo Fisherov test
-fisher.test(tbl, simulate.p.value = TRUE, B = 1e7)
 ```
-chisq.test je nepouzdan pošto su očekivane frekvencije pojedinih  razreda manje od 5, radi toga koristimo fisher.test. p-value testa iznosi manje od 0.05 stoga odbacujemo hipotezu H0, te zaključujemo da su edukacija više educiranog roditelja i završna ocjena iz matematike zavisne.
-
-```{r}
-#H0: Ocjena iz portugala i edukacija više educiranog roditelja su nezavisna obilježja
-#H1: Ocjena iz portugala i edukacija više educiranog roditelja su zavisna obilježja
-tbl2 = table(students$highestparentedu, students$Por_grade)
-print(addmargins(tbl2))
-chisq.test(tbl2,correct=F)
-#radi pojave frekvencije manje od 5 koristimo Fisherov test
-fisher.test(tbl2, simulate.p.value = TRUE, B = 1e7)
-```
-
-chisq.test je nepouzdan pošto su očekivane frekvencije pojedinih  razreda manje od 5, radi toga koristimo fisher.test. p-value testa iznosi manje od 0.05 stoga odbacujemo hipotezu H0, te zaključujemo da su edukacija više educiranog roditelja i završna ocjena iz portigala zavisne.
+p-value testa iznosi manje od 0.05 stoga odbacujemo hipotezu H0, te zaključujemo da su edukacija više educiranog roditelja i završna ocjena iz matematike zavisne.
 
 ```{r}
 #H0: Ocjena iz matematike i edukacija majke su nezavisna obilježja
 #H1: Ocjena iz matematike i edukacija majke su zavisna obilježja
-#izbacujemo slučajeve kada je edukacija majke 0 zato što imamo premalo takvih slučajeva
-studentscopy = students %>% filter(students$Medu != "0")
-tbl2 = table(studentscopy$Medu, studentscopy$Mat_grade)
-
-added_margins_tbl = addmargins(tbl2)
+tbl = table(students$MeduMod, students$Mat_grade)
+added_margins_tbl = addmargins(tbl)
 print(added_margins_tbl)
+chisq.test(tbl,correct=F)
+
+#H0: Ocjena iz matematike i edukacija oca su nezavisna obilježja
+#H1: Ocjena iz matematike i edukacija oca su zavisna obilježja
+tbl2 = table(students$FeduMod, students$Mat_grade)
+added_margins_tbl2 = addmargins(tbl2)
+print(added_margins_tbl2)
+chisq.test(tbl2,correct=F)
+```
+
+p-value Testa nezavisnosti iznosi manje od 0.05 stoga odbacujemo hipotezu H0, te zaključujemo da su edukacija majke i završna ocjena iz matematike zavisne, dok do tog zaključka ne možemo doći u slučaju edukacije oca.
+
+```{r}
+#H0: Ocjena iz portugala i edukacija više educiranog roditelja su nezavisna obilježja
+#H1: Ocjena iz portugala i edukacija više educiranog roditelja su zavisna obilježja
+tbl = table(students$highestparentedu, students$Por_grade)
+added_margins_tbl = addmargins(tbl)
+print(added_margins_tbl)
+chisq.test(tbl,correct=F)
 
 #očekivane frekvencije svih razreda moraju biti veće ili jednake 5
 for (col_names in colnames(added_margins_tbl)){
@@ -142,38 +158,39 @@ for (col_names in colnames(added_margins_tbl)){
     }
   }
 }
-
-chisq.test(tbl2,correct=F)
+#Vidimo da postoje očekivane frekvencije manje od 5 pa koristimo fisher.test() umjesto chiq.test()
+fisher.test(tbl)
 ```
 
-p-value Testa nezavisnosti iznosi manje od 0.05 stoga odbacujemo hipotezu H0, te zaključujemo da su edukacija majke i završna ocjena iz matematike zavisne.
+chisq.test je nepouzdan pošto su očekivane frekvencije pojedinih  razreda manje od 5, radi toga koristimo fisher.test. p-value Fesherovog testa iznosi manje od 0.05 stoga odbacujemo hipotezu H0, te zaključujemo da su edukacija više educiranog roditelja i završna ocjena iz portigala zavisne.
 
 ```{r}
 #H0: Ocjena iz portugala i edukacija majke su nezavisna obilježja
 #H1: Ocjena iz portugala i edukacija majke su zavisna obilježja
-#izbacujemo slučajeve kada je edukacija majke 0 zato što imamo premalo takvih slučajeva
-studentscopy = students %>% filter(students$Medu != "0")
-tbl2 = table(studentscopy$Medu, studentscopy$Por_grade)
-
-added_margins_tbl = addmargins(tbl2)
+tbl = table(students$MeduMod, students$Por_grade)
+added_margins_tbl = addmargins(tbl)
 print(added_margins_tbl)
+chisq.test(tbl,correct=F)
 
+#H0: Ocjena iz portugala i edukacija oca su nezavisna obilježja
+#H1: Ocjena iz portugala i edukacija oca su zavisna obilježja
+tbl2 = table(students$FeduMod, students$Por_grade)
+added_margins_tbl2 = addmargins(tbl2)
+print(added_margins_tbl2)
+chisq.test(tbl2,correct=F)
 #očekivane frekvencije svih razreda moraju biti veće ili jednake 5
-for (col_names in colnames(added_margins_tbl)){
-  for (row_names in rownames(added_margins_tbl)){
+for (col_names in colnames(added_margins_tbl2)){
+  for (row_names in rownames(added_margins_tbl2)){
     if (!(row_names == 'Sum' | col_names == 'Sum') ){
-      cat('Očekivane frekvencije za razred ',col_names,'-',row_names,': ',(added_margins_tbl[row_names,'Sum'] * added_margins_tbl['Sum',col_names]) / added_margins_tbl['Sum','Sum'],'\n')
+      cat('Očekivane frekvencije za razred ',col_names,'-',row_names,': ',(added_margins_tbl2[row_names,'Sum'] * added_margins_tbl2['Sum',col_names]) / added_margins_tbl2['Sum','Sum'],'\n')
     }
   }
 }
-
-chisq.test(tbl2,correct=F)
-
-fisher.test(tbl2, simulate.p.value = TRUE, B = 1e7)
-
+#Vidimo da postoje očekivane frekvencije manje od 5 pa koristimo fisher.test() umjesto chiq.test()
+fisher.test(tbl)
 ```
 
-chisq.test je nepouzdan pošto su očekivane frekvencije pojedinih  razreda manje od 5, radi toga koristimo fisher.test. p-value Testa nezavisnosti iznosi manje od 0.05 stoga odbacujemo hipotezu H0, te zaključujemo da su edukacija majke i završna ocjena iz portugala zavisne.
+p-value Testa nezavisnosti iznosi manje od 0.05 stoga odbacujemo hipotezu H0, te zaključujemo da su edukacija majke i završna ocjena iz portugala zavisne, kod usporedbe s edukacijom oca koristimo Fisherov test gdje je p-value manji od 0.05 pa odbacujemo H0 i zaključujemo da su edukacija oca i završna ocjena iz portugala zavisne.
 
 
 ## Tomislav Prhat
