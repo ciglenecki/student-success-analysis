@@ -81,6 +81,33 @@ students_clean <- students
 
 ```
 
+
+# Testing
+
+
+```{r}
+# pronadi char stupce (tj. kategoricke varijable)
+charcols <- names(students %>% select(where(is_character)))
+charcols
+
+students_char = students
+
+# pretvori char stupce u faktore (kategoricke varijable)
+students_char[charcols] <- lapply(students_char[charcols] , function(x) factor(x,
+                                  ordered = TRUE))
+
+# one hot encodeaj kateogricke varijable
+# sad stupci vise nisu vrijednosti char nego su 1 ili 0 
+# npr. MALE 0 (zensko)
+# MALE 1 (musko)
+
+students_dummy = dummy_cols(students_char, charcols, remove_selected_columns = TRUE)
+# ako ti treba, cor tablica radi!
+# cor(students_dummy)
+
+summary(lm(students_char$G3_mat ~ students_char$traveltime * students_char$higher))
+```
+
 # Petar Dragojević
 # zavisnost izmedu edukacije roditelja i uspješnosti
 ```{r}
@@ -663,3 +690,159 @@ cat_reject_h0("Portugalski t-test:", is_gp_por_better)
 Za matematiku, nismo odbacili hipotezu H0 i zbog čega ne možemo zaključiti da škola GP ima bolje ocjene iz matematike od škole MS.
 
 Za portugalski, odbacujemo hipotezu H0 u korist hipoteze H1 i zaključujemo da je škola `GP` ima bolje ocjene iz portgualskog od škole `MS`.
+
+
+
+#Predviđanje uspjeha na kraju školske godine drugim varijablama iz skupa podataka
+
+Transformirajmo kategoričke varijable u dummy varijable. 
+```{r, collapse=TRUE}
+
+require(fastDummies)
+students_dummies=dummy_cols(students, remove_first_dummy = TRUE, remove_selected_columns = TRUE)
+
+students_dummies
+
+```
+Sada provodimo individualne jednostavne linearne regresije G3_mat i G3_por  ovisno o svakoj od varijabli iz skupa, te spremamo $R^2$ vrijednosti i p-vrijednosti F-testova za jednostavnu linearnu regresiju u tablice $\text{modelsMat}$ i $\text{modelsPor}$
+```{r, collapse=TRUE}
+varName=c()
+rSquaredM=c()
+pValueofFM=c()
+rSquaredP=c()
+pValueofFP=c()
+
+for(i in 1:ncol(students_dummies)){
+  if(i!=18 && i!=21){
+  colName=colnames(students_dummies)[i]
+  names(students_dummies)[i]="tempx"
+  
+  modelMat=lm(formula=G3_mat~tempx, data=students_dummies)
+  modelPor=lm(formula=G3_por~tempx, data=students_dummies)
+  names(students_dummies)[i]=colName
+  m=summary(modelMat)
+  p=summary(modelPor)
+  varName=append(varName,colName)
+  rSquaredM=append(rSquaredM, m$r.squared)
+  pValueofFM=append(pValueofFM,pf(m$fstatistic[1],m$fstatistic[2],m$fstatistic[3],lower.tail=FALSE) )
+  rSquaredP=append(rSquaredP, p$r.squared)
+  pValueofFP=append(pValueofFP,pf(p$fstatistic[1],p$fstatistic[2],p$fstatistic[3],lower.tail=FALSE) )
+  }
+  
+  modelsMat=data.frame(varName, rSquaredM, pValueofFM)
+  modelsPor=data.frame(varName, rSquaredP, pValueofFP)
+}
+```
+##Predviđanje konačne ocjene iz matematike
+Pogledajmo koje su se varijable ispostavile najboljim prediktorima za $\text{G3\_mat}$ (poredano po $R^2$ vrijednostima)
+```{R, collapse=TRUE}
+ modelsMat[order(-modelsMat$rSquaredM), ]
+
+```
+Razmotrit ćemo prvih 10 najboljih prediktora. Najprije provjerimo jesu li neke od tih varijabli visoko korelirane:
+
+```{r, collapse=TRUE}
+cor(cbind(students_dummies$G2_mat,students_dummies$G1_mat,students_dummies$G2_por,students_dummies$G1_por,students_dummies$failures_mat,students_dummies$higher_yes,students_dummies$Medu,students_dummies$age,students_dummies$absences_por,students_dummies$Fedu ))
+```
+Kao i očekivano ocjene G2_mat i G1_mat visoko su korelirane, isto kao i G2_por i G1_por, a značajna je i korelacija između ocjena matematike i portugala. Osim toga uočimo koreliranost razina edukacije majke i oca.
+```{r, collapse=TRUE}
+cor(students_dummies$Medu, students_dummies$Fedu)
+```
+Zasad nećemo eliminirati nijedan regresor. Izgradimo linearni model od gore izdvojenih varijabli za G3_mat:
+
+```{r, collapse=TRUE}
+multiMat=lm(G3_mat~G2_mat + G1_mat + G2_por+ G1_por+ failures_mat + higher_yes+ Medu + age+ absences_por + Fedu, data=students_dummies )
+summary(multiMat)
+
+```
+Pojednostavimo sad model, uzevši 5  varijabli s najnižim p-vrijednostima
+```{r, collapse=TRUE}
+multiMat2=lm(data=students_dummies, G3_mat~G2_mat+G1_mat+age+ failures_mat+G2_por)
+summary(multiMat2)
+```
+Nešto nam se smanjio $R^2$, no prilagođeni $R^2$ se uvećao-indikacija da smo eliminirali neke nepotrebne regresore.
+
+Dodatno pojednostavljenje modela smanjuje prilagođeni $R^2$
+```{r, collapse=TRUE}
+multiMat3=lm(data=students_dummies, G3_mat~G2_mat+G1_mat+age)
+summary(multiMat3)
+```
+
+Provjerimo normalnost reziduala
+```{r, collapse=TRUE}
+hist(rstandard(multiMat))
+hist(rstandard(multiMat2))
+qqnorm(rstandard(multiMat))
+qqnorm(rstandard(multiMat2))
+ks.test(rstandard(multiMat),'pnorm')
+ks.test(rstandard(multiMat2),'pnorm')
+
+```
+Reziduali ne nalikuju normalnoj distribuciji.
+Promotrimo ih u ovisnosti o predviđenoj vrijednosti.
+```{r, collapse=TRUE}
+plot(multiMat$fitted.values, multiMat$residuals)
+plot(multiMat2$fitted.values, multiMat$residuals)
+```
+Zanimljivo je još i pogledati koliko dobro možemo predvidjeti konačnu ocjenu iz matematike bez ikakvog znanja o drugim ocjenama, oslanjajući se na ostalih 6 od 10 najboljih prediktora
+```{r, collapse=TRUE}
+bezOcjenaMat=lm(data=students_dummies, G3_mat~failures_mat + higher_yes + Medu + age + absences_por + Fedu )
+summary(bezOcjenaMat)
+```
+Ovakav model objašnjava svega 18% varijance u promatranoj varijabli. Kao i očekivano same ocjene najbolji su prediktor konačne ocjene, ali  i neke druge varijable nisu potpuno irelevantne.
+
+##Predviđanje konačne ocjene iz portugala
+Pogledajmo koje su se varijable ispostavile najboljim prediktorima za $\text{G3\_por}$ (poredano po $R^2$ vrijednostima)
+
+```{r, collapse=TRUE}
+modelsPor[order(-modelsPor$rSquaredP),]
+```
+Razmotrit ćemo prvih 13 najboljih prediktora. Najprije provjerimo jesu li neke od tih varijabli visoko korelirane:
+```{r, collapse=TRUE}
+cor(cbind(students_dummies$G2_por,students_dummies$G1_por,students_dummies$G1_mat,students_dummies$G2_mat,students_dummies$failures_mat,students_dummies$failures_por,students_dummies$higher_yes,students_dummies$Dalc,students_dummies$studytime,students_dummies$Walc, students_dummies$sex_M, students_dummies$Medu,students_dummies$address_U))
+```
+Otprije znamo za visoku koreiranost ocjena, a učimo još i visoku koreliranost razina konzumacija alkohola vikendom i radnim danima.
+```{r, collapse=TRUE}
+cor(students_dummies$Dalc, students_dummies$Walc)
+```
+Zasad ne odbacujući nijedan regresor izradimo linearni model za prethodno izdvojenih 13 varijabli.
+```{r, collapse=TRUE}
+multiPor=lm(data=students_dummies, G3_por~G2_por+G1_por+G1_mat+G2_mat+failures_mat+failures_por+higher_yes+Dalc+studytime+Walc+sex_M+Medu+address_U)
+summary(multiPor)
+```
+Pojednostavimo sad uzevši 8 variabli s najnižim p-vrijednostima:
+```{r, collapse=TRUE}
+multiPor2=lm(data=students_dummies, G3_por~G2_por+ failures_por + G1_mat+G1_por+ G2_mat+address_U+sex_M+failures_mat)
+summary(multiPor2)
+
+```
+Ovaj skup varijabli ispostavlja se daje najveći prilagođeni $R^2$:
+```{r, collapse=TRUE}
+#npr ograničavajući na 6 regresora smanjuje se prilagođeni R^2
+multiPor3=lm(data=students_dummies, G3_por~G2_por+ failures_por + G1_mat+G1_por+ G2_mat+sex_M)
+summary(multiPor3)
+```
+Provjerimo još normalnost reziduala:
+```{r, collapse=TRUE}
+hist(rstandard(multiPor))
+hist(rstandard(multiPor2))
+qqnorm(rstandard(multiPor))
+qqnorm(rstandard(multiPor2))
+ks.test(rstandard(multiPor),'pnorm')
+ks.test(rstandard(multiPor2),'pnorm')
+
+```
+Reziduali nalikuju normalnoj distribuciji nešto više nego kod modela za konačnu ocjenu iz matematike, ali i dalje ne osobito.
+Promotrimo ih u ovisnosti o predviđenoj vrijednosti.
+```{r, collapse=TRUE}
+plot(multiPor$fitted.values, multiPor$residuals)
+plot(multiPor2$fitted.values, multiPor2$residuals)
+```
+
+Promotrimo još koliko dobro možemo predvidjeti konačnu ocjenu iz portugalskog bez znanja o drugim ocjenama, oslanjajući se na ostalih 9/13 najboljih prediktora:
+
+```{r, collapse=TRUE}
+bezOcjenaPor=lm(data=students_dummies, G3_por~failures_mat+failures_por+higher_yes+Dalc+studytime+Walc+sex_M+Medu+address_U)
+summary(bezOcjenaPor)
+```
+Model bez ocjena za portugalski objašnjava skoro 30% varijance u promatranoj varijabli. Značajno poboljšanje u odnosu na model bez ocjena za matematiku.
