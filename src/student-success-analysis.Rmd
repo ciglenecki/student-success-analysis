@@ -144,6 +144,7 @@ boxplot(students$G3_por[students$highestparentedu=="0"], students$G3_por[student
 ```
 
 H0: Ocjena iz matematike i edukacija više educiranog roditelja su nezavisna obilježja
+
 H1: Ocjena iz matematike i edukacija više educiranog roditelja su zavisna obilježja
 ```{r}
 tbl = table(students$highestparentedu, students$Mat_grade)
@@ -154,6 +155,7 @@ chisq.test(tbl,correct=F)
 p-value testa iznosi manje od 0.05 stoga odbacujemo hipotezu H0, te zaključujemo da su edukacija više educiranog roditelja i završna ocjena iz matematike zavisne.
 
 H0: Ocjena iz matematike i edukacija majke su nezavisna obilježja
+
 H1: Ocjena iz matematike i edukacija majke su zavisna obilježja
 ```{r}
 tbl = table(students$MeduMod, students$Mat_grade)
@@ -164,6 +166,7 @@ chisq.test(tbl,correct=F)
 p-value Testa nezavisnosti iznosi manje od 0.05 stoga odbacujemo hipotezu H0, te zaključujemo da su edukacija majke i završna ocjena iz matematike zavisne.
 
 H0: Ocjena iz matematike i edukacija oca su nezavisna obilježja
+
 H1: Ocjena iz matematike i edukacija oca su zavisna obilježja
 ```{r}
 tbl2 = table(students$FeduMod, students$Mat_grade)
@@ -175,6 +178,7 @@ p-value iznosi više od 0.05 pa ne možemo odbaciti hipotezu H0.
 
 
 H0: Ocjena iz portugala i edukacija više educiranog roditelja su nezavisna obilježja
+
 H1: Ocjena iz portugala i edukacija više educiranog roditelja su zavisna obilježja
 ```{r}
 tbl = table(students$highestparentedu, students$Por_grade)
@@ -197,6 +201,7 @@ fisher.test(tbl)
 chisq.test je nepouzdan pošto su očekivane frekvencije pojedinih  razreda manje od 5, radi toga koristimo fisher.test. p-value Fesherovog testa iznosi manje od 0.05 stoga odbacujemo hipotezu H0, te zaključujemo da su edukacija više educiranog roditelja i završna ocjena iz portigala zavisne.
 
 H0: Ocjena iz portugala i edukacija majke su nezavisna obilježja
+
 H1: Ocjena iz portugala i edukacija majke su zavisna obilježja
 ```{r}
 tbl = table(students$MeduMod, students$Por_grade)
@@ -207,6 +212,7 @@ chisq.test(tbl,correct=F)
 p-value Testa nezavisnosti iznosi manje od 0.05 stoga odbacujemo hipotezu H0, te zaključujemo da su edukacija majke i završna ocjena iz portugala zavisne.
 
 H0: Ocjena iz portugala i edukacija oca su nezavisna obilježja
+
 H1: Ocjena iz portugala i edukacija oca su zavisna obilježja
 ```{r}
 tbl2 = table(students$FeduMod, students$Por_grade)
