@@ -1,5 +1,6 @@
 ---
-title: "student-success-analysis"
+title: "SAP - Uspjeh učenika u nastavi"
+author: "Petar Dragojević, Magda Radić, Tomislav Prhat, Matej Ciglenečki"
 output:
   pdf_document: default
   html_document: default
@@ -17,6 +18,8 @@ require(nortest) # lilliefors test
 styler::style_dir() # Style the current file so it's well formated
 message("Your current working directory is: ", getwd())
 knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 80), tidy = TRUE)
+options(warn=-1)
+
 ```
 
 
@@ -51,19 +54,15 @@ Provjeravamo koji su stupci kojeg tipa: numerički, kategorički...
 sapply(students_org, class)
 ```
 
-Provjeravamo postoje li nevažeći podaci koji prelaze maksimalne vrijednosti specificirane u uputama o podacima. Sve vrijednosti su dobrom intervalu.
+Provjeravamo postoje li nevažeći podaci koji prelaze maksimalne vrijednosti specificirane u uputama o podacima. Sve vrijednosti su dozvoljenom intervalu.
 ```{r, colapse=TRUE, results='hide'}
-
-# Let's check if any columns exceed the maximum or minumum values specified in the pdf
-# This makes sense only for numerical values
-
 colMax <- students_org %>%
   select(where(is.numeric)) %>%
   sapply(., max, na.rm = TRUE)
 colMax
 # Every column has normal maximum value
 ```
-
+Vrijednosti svih atributa padaju u dozvoljen interval
 
 
 Izbacivanje svih NaN/NA/null vrijednosti iz podatkovnog skupa. Na sreću, takvih vrijednosti nije bilo.
@@ -76,16 +75,12 @@ students_org %>% filter(is.null(.)) %>% summarise(n = n())
 # Drop these values just in case they show up with another dataset
 # We will continue using "student" variable
 students <- students_org %>% filter_all(all_vars(!is.na(.) & !is.nan(.) & !is.null(.)))
-
 students_clean <- students
-
 ```
 
 
+```{r, eval=FALSE, echo=FALSE}
 # Testing
-
-
-```{r}
 # pronadi char stupce (tj. kategoricke varijable)
 charcols <- names(students %>% select(where(is_character)))
 charcols
@@ -108,8 +103,7 @@ students_dummy = dummy_cols(students_char, charcols, remove_selected_columns = T
 summary(lm(students_char$G3_mat ~ students_char$traveltime * students_char$higher))
 ```
 
-# Petar Dragojević
-Ispitati zavisnost izmedu edukacije roditelja i uspješnosti.
+# Zavisnost između edukacije roditelja i uspješnosti
 ```{r}
 #Mat_grade i Por_grade prebacivanje ocjena u engleski način ocjenjivanja
 students <- students %>% mutate(Mat_grade =
@@ -124,7 +118,6 @@ students <- students %>% mutate(Por_grade =
                                G3_por >= 14 & G3_mat < 16 ~ "B",
                                G3_por >= 16 ~ "A")
 )
-
 #MeduMod i FeduMod grupiranje edukacije roditelja u veće podgrupe 
 students <- students %>% mutate(MeduMod =
                      case_when(Medu == "0" | Medu == "1" | Medu == "2" ~ "0", 
@@ -136,12 +129,11 @@ students <- students %>% mutate(FeduMod =
                                Fedu == "3" ~ "1",
                                Fedu == "4" ~ "2")
 )
-
 #za edukaciju roditelja uzimamo onu koja je veća
 students$highestparentedu <- pmax(students$MeduMod, students$FeduMod)
 ```
 
-```{r, colapse=TRUE}
+```{r, colapse=TRUE, echo=FALSE}
 boxplot(students$G3_mat[students$MeduMod=="0"], students$G3_mat[students$MeduMod=="1"], students$G3_mat[students$MeduMod=="2"], students$G3_mat[students$FeduMod=="0"], students$G3_mat[students$FeduMod=="1"], students$G3_mat[students$FeduMod=="2"], names = c("M/low", "M/middle", "M/high", "F/low", "F/middle", "F/high"),xlab="Mother/Father education",ylab="Mat final grade")
 
 boxplot(students$G3_por[students$MeduMod=="0"], students$G3_por[students$MeduMod=="1"], students$G3_por[students$MeduMod=="2"], students$G3_por[students$FeduMod=="0"], students$G3_por[students$FeduMod=="1"], students$G3_por[students$FeduMod=="2"], names = c("M/low", "M/middle", "M/high", "F/low", "F/middle", "F/high"),xlab="Mother/Father education",ylab="Por final grade")
@@ -149,7 +141,6 @@ boxplot(students$G3_por[students$MeduMod=="0"], students$G3_por[students$MeduMod
 boxplot(students$G3_mat[students$highestparentedu=="0"], students$G3_mat[students$highestparentedu=="1"], students$G3_mat[students$highestparentedu=="2"], names = c("low", "middle", "high"),xlab="Highest parent education",ylab="Mat final grade")
 
 boxplot(students$G3_por[students$highestparentedu=="0"], students$G3_por[students$highestparentedu=="1"], students$G3_por[students$highestparentedu=="2"], names = c("low", "middle", "high"),xlab="Highest parent education",ylab="Por final grade")
-
 ```
 
 H0: Ocjena iz matematike i edukacija više educiranog roditelja su nezavisna obilježja
@@ -235,268 +226,16 @@ fisher.test(tbl)
 ```
 Kod usporedbe s edukacijom oca koristimo Fisherov test gdje je p-value manji od 0.05 pa odbacujemo H0 i zaključujemo da su edukacija oca i završna ocjena iz portugala zavisne.
 
-
-## Tomislav Prhat
-
-1. Jesu li učenici uspješniji u matematici ili glavnom jeziku?
-
-```{r}
-
-students_org  %>% summarise(
-          Mean.G3_mat = mean(G3_mat),
-          Mean.G3_por = mean(G3_por),
-            ) -> summary.result1
-summary.result1
-
-students_org  %>% summarise(
-          Med.G3_mat = median(G3_mat),
-          Med.G3_por = median(G3_por),
-            ) -> summary.result2
-summary.result2
-
-students_org  %>% summarise(
-          Mean.G3_mat = mean(G3_mat, trim = 0.1),
-          Mean.G3_por = mean(G3_por, trim = 0.1),
-            ) -> summary.result3
-summary.result3
-
-(1 - summary.result3/summary.result1)*100
-
-```
-
-Kao što je vidljivo iz podataka, učenici su malo uspješniji u glavnom jeziku (portugalskom), ali ako gleda prema samoj ocjeni obje skupine spadaju u ocjenu "C". Čak i ako uzmemo podrezanu srednju vrijednost (10%), rezultat se promijeni za ~1%.
-
-
-```{r}
-
-students_org  %>% summarise(
-          IQR.G3_mat = IQR(G3_mat),
-          IQR.G3_por = IQR(G3_por),
-            ) -> summary.result4
-summary.result4
-
-students_org  %>% summarise(
-          Var.G3_mat = var(G3_mat),
-          Var.G3_por = var(G3_por),
-            ) -> summary.result5
-summary.result5
-
-
-students_org  %>% summarise(
-          sd.G3_mat = sd(G3_mat),
-          sd.G3_por = sd(G3_por),
-            ) -> summary.result6
-summary.result6
-
-```
-
-Ako gledamo raspršenost varijabli vidimo da ocjene iz portugalskog jezika imaju manje sve tri mjere (IQR, varijanca i standardna devijacija) vidimo da se ocjene iz portugalskog manje manje odmiču od srednje vrijednosti nego ocjene iz matematike.
-
-
-```{r}
-boxplot(students_org$G3_mat, students_org$G3_por, 
-        names = c('konačna ocjena iz matematike','konačna ocjena iz portugalskog'),
-        main='Boxplot konačnih ocjena iz matematike i portugala')
-
-```
-
-```{r}
-hist(students_org$G3_mat, 
-     breaks=seq(0, 20),
-     main='Histogram ocjena iz matematike',
-     xlab='Ocjena')
-
-
-```
-```{r}
-hist(students_org$G3_por, 
-     breaks=seq(0, 20),
-     main='Histogram ocjena iz portugalskog',
-     xlab='Ocjena')
-
-
-```
-Prije testa varijance radimo provjeru normalnosti podataka pomoću qqplotova te Lilliefors i Kolmogorov-Smirnov testova:
-
-```{r}
-
-qqnorm(students_org$G3_mat, pch = 1, frame = FALSE,main='Matematika')
-qqline(students_org$G3_mat, col = "steelblue", lwd = 2)
-
-
-```
-```{r}
-
-qqnorm(students_org$G3_por, pch = 1, frame = FALSE,main='Portugalski')
-qqline(students_org$G3_por, col = "steelblue", lwd = 2)
-
-
-```
-
-```{r}
-print('Matematika:')
-lillie.test(students_org$G3_mat)["p.value"]
-ks.test(students_org$G3_mat, "pnorm", mean(students_org$G3_mat), sd(students_org$G3_mat))["p.value"]
-
-print('Portugalski:')
-lillie.test(students_org$G3_por)["p.value"]
-ks.test(students_org$G3_por, "pnorm", mean(students_org$G3_por), sd(students_org$G3_por))["p.value"]
-
-```
-Jako male p-vrijednosti kod Lilliefors i Kolmogorov-Smirnov testova dolaze zbog repova s lijeve strane.
-Grafički, na temelju rezultata ordeđujemo da za sve skupove vrijedi da proizlaze iz normalne distribucije ali s opaskom da postoje stršeće vrijednosti na lijeovj strani distribucije. 
-
-## F-test
-
-Važno je napomenuti da je test o varijanci iznimno osjetljiv na normalnost. Test će biti proveden zbog vježbe ali njegov rezultat se neće uzeti u obzir.
-
-```{r}
-var(students_org$G3_mat)
-var(students_org$G3_por)
-
-```
-```{r}
-var.test(students_org$G3_mat, students_org$G3_por)
-```
-Zbog jako male vrijednosti odbacujemo hipotezu H0 da su varijance dva uzorka jednake.
-
-## T-test
-
-```{r}
-t.test(students_org$G3_por, students_org$G3_mat, 
-       alternative = "greater",
-       var.equal = FALSE)
-
-
-```
-Zbog jako male p-vrijednosti odbacujemo hipotezu H0 da su prosjeci ocjena jednaki u korist hipoteze H1 da je prosjek ocjena iz portugalskog značajno veći od prosjeka ocjena iz matematike. 
-
-
-
-## Matej Ciglenečki
+# Koja škola je bolja u matematici a koja u portugalskom?
 
 ```{r, colapse=TRUE, eval=FALSE, echo=FALSE}
+## Matej Ciglenečki
+
 students$test <- students$absences_mat
 
 students$test  <- students %>% mutate(quantile = ntile(test,5))%>%group_by(quantile) %>% select(quantile)
 boxplot(students$G3_mat ~ unlist(students$test))
 ```
-
-# Kako vrijeme putovanja do škole utjeće na uspjeh učenika?
-
-Na ovo pitanje odgovirit ćemo ANOVA-om. 
-Pretpostavke ANOVA-e su:
-
-* nezavisnost pojedinih podataka u uzorcima
-* normalna razdioba podataka
-* homogenost varijanci među populacijama
-
-Postavljamo hipotezu H0 koja glasi, srednja vrijednost grupa su podjednake.
-$$H_{0}: \mu_{1}=\mu_{2}=\ldots=\mu_{k}$$
-$$H_{1}: \neg H_{0}$$
-
-S obizrom da se radi o različitim školama i različitim predmetima možemo pretpostaviti nezavisnost ocjena.
-
-Ukoliko nakon provedbe ANOVA-e odbacimo H0 hipotezu možemo zaključiti da su srednje vrijednosti međusobno različite, tj. da vrijeme putovanje utječe na uspjeh učenika.
-
-## Obrada kategoričkih stupaca
-
-Kao grupe koristiti će se vrijednosti iz stupca `traveltime` Prvo je potrebno pretvoriti stupac `traveltime` u kategoričke podatke (s poretkom). `traveltime` se sastoji od 4 mogućih vrijednosti koje definiraju potrebno vrijeme od škole do doma:
-
-* `<` 15min
-* 15 - 30 min
-* 30 - 60 min
-* `>` 60 min
-
-Nadalje, zadnju kategoriju (60min+) spojiti ćemo sa predzadnjom kategorijom (30-60min) zbog toga što se u zadnjoj kategoriji nalaze samo 8 podataka dok se u preostalim kategorijama nalazi puno veći broj podataka.
-
-```{r, colapse=TRUE}
-count(students, students$traveltime)
-students <- students_clean
-students$traveltime <- factor(students$traveltime, ordered=TRUE, labels=c("0 - 15 min", "15 - 30 min", "> 30 min", "> 30 min"))
-```
-
-Za uspjeh koristiti ćemo zboj varijabli `G[1,2,3]_mat` i `G[1,2,3]_por` koji ćemo spremitit u novu varijablu `G_total`.
-
-```{r, colapse=TRUE, results='hide'}
-students$G3_total <- students$G3_mat + students$G3_por
-students$G2_total <- students$G2_mat + students$G2_por
-students$G1_total <- students$G1_mat + students$G1_por
-students$G_total <- students$G1_total + students$G2_total + students$G3_total
-```
-
-
-ANOVA je robustna na blaga odstupanja što se tiče normalnosti. Svejedno, testirati ćemo normalnost varijable `G_total` nad cijelim podatkovnim skupom, a zatim nad  `G_total` za svaku pojedinu grupu `traveltime`-a. 
-
-
-```{r, colapse=TRUE, out.width="80%"}
-model = lm(students$G_total ~ students$traveltime)
-
-par(mfrow=c(1,2)) # 2 plots in 1 row
-
-timeperiod = '0 - 15 min'
-data <- rstandard(model)[students$traveltime==timeperiod]
-qqnorm(data, pch = 1, frame = FALSE, main = timeperiod)
-qqline(data)
-hist(data, main = timeperiod)
-lillie.test(data)["p.value"]
-ks.test(data, 'pnorm', mean=mean(data), sd=sd(data))["p.value"]
-
-timeperiod = '15 - 30 min'
-data <- rstandard(model)[students$traveltime==timeperiod]
-qqnorm(data, pch = 1, frame = FALSE, main = timeperiod)
-qqline(data)
-hist(data, main = timeperiod)
-lillie.test(data)["p.value"]
-ks.test(data, 'pnorm', mean=mean(data), sd=sd(data))["p.value"]
-
-timeperiod = "> 30 min"
-data <- rstandard(model)[students$traveltime==timeperiod]
-qqnorm(data, pch = 1, frame = FALSE, main = timeperiod)
-qqline(data)
-hist(data, main = timeperiod)
-lillie.test(data)["p.value"]
-ks.test(data, 'pnorm', mean=mean(data), sd=sd(data))["p.value"]
-```
-
-Na svakom grafu možemo vidjeti da podaci uglavnom prate normalnu distribuciju uz manji broj stršećih vrijednosti (lijevi rep). Nadalje, `p` vrijednosti Lillieforsovog testa nisu uvijek iznad 0.05 međutim za sve Kolmogorov–Smirnov testove `p` vrijednosti su iznad 0.05.
-
-Lilliefors koristimo ako nam nije poznata varijanca i srednja vrijednost populacije, što je s ovim podacima i slučaj. Poznato je da Lilliefors konzervativniji i da odbacuje hipotezu H0 češće nego Kolmogorov–Smirnov.
-
-S obzirom na manja odstupanja, ne toliko male `p` vrijednosti i grafički izgled `qqnorm`-a i histograma pretpostaviti ćemo da su podaci uzrokovani iz normalne distribucije. 
-
-## Homogenost varijanci - Bartlettov test
-
-Prvo je potrebno postaviti hipoteze H0 i H1:
-$$H_{0}: \sigma_{1}^{2}=\sigma_{2}^{2}=\ldots=\sigma_{k}^{2}$$
-$$H_{1}: \neg H_{0}$$
-
-```{r}
-var(students$G_total[students$traveltime=="> 30 min"])
-var(students$G_total[students$traveltime=='15 - 30 min'])
-var(students$G_total[students$traveltime=="> 30 min"])
-bartlett.test(students$G_total ~ students$traveltime)
-```
-Vidimo da su vrijednosti varijance slične. S obzirom da je `p` vrijednost testa veća od 0.05 ne odbacujemo H0 čime zadovoljavamo ANOVA pretpostavku o homogenosti varijanca.
-
-## ANOVA - Jesu li srednje vrijednosti za različite grupe drugačije?
-
-$$H_{0}: \mu_{1}=\mu_{2}=\ldots=\mu_{k}$$
-$$H_{1}: \neg H_{0}$$
-
-```{r}
-boxplot(students$G_total ~ students$traveltime)
-```
-Grafički možemo pretpostaviti da se vrijeme putovanja utječe na uspjeh učenika. Naravno, ANOVA-om je potrebno provjeritit koliko je ta razlika statistički značajna.
-
-```{r}
-model = lm(students$G_total ~ students$traveltime)
-anova(model)
-```
-
-ANOVA nam govori da postoji razlika između grupa `traveltime`. Iako nije strogo značajna i dalje se radi o značajnoj `p` vrijednosti koja se nalazi između `0.001` i `0.01`. Možemo zaključiti da za različite grupe vremena putovanja imaju utjecaj na učenikov uspjeh.
-
-# Koja škola je bolja u matematici a koja u portugalskom?
 
 Na ovo pitanje odgovoriti ćemo provedbom t-testa koristeći 4 različita podatkovna skupa. Razdvajanje podatkovnog skupa na dvije škole (GP, MS) te na dva predmeta (matematika i portugalski) dobivamo sljedeće podatkovne skupove: `gp_mat`, `gp_por`, `ms_mat`, `ms_por`
 
@@ -719,20 +458,262 @@ Za matematiku, nismo odbacili hipotezu H0 i zbog čega ne možemo zaključiti da
 
 Za portugalski, odbacujemo hipotezu H0 u korist hipoteze H1 i zaključujemo da je škola `GP` ima bolje ocjene iz portgualskog od škole `MS`.
 
+# Jesu li učenici uspješniji u matematici ili glavnom jeziku?
+
+```{r}
+students_org  %>% summarise(
+          Mean.G3_mat = mean(G3_mat),
+          Mean.G3_por = mean(G3_por),
+            ) -> summary.result1
+summary.result1
+
+students_org  %>% summarise(
+          Med.G3_mat = median(G3_mat),
+          Med.G3_por = median(G3_por),
+            ) -> summary.result2
+summary.result2
+
+students_org  %>% summarise(
+          Mean.G3_mat = mean(G3_mat, trim = 0.1),
+          Mean.G3_por = mean(G3_por, trim = 0.1),
+            ) -> summary.result3
+summary.result3
+
+(1 - summary.result3/summary.result1)*100
+
+```
+
+Kao što je vidljivo iz podataka, učenici su malo uspješniji u glavnom jeziku (portugalskom), ali ako gleda prema samoj ocjeni obje skupine spadaju u ocjenu "C". Čak i ako uzmemo podrezanu srednju vrijednost (10%), rezultat se promijeni za ~1%.
 
 
-#Predviđanje uspjeha na kraju školske godine drugim varijablama iz skupa podataka
+```{r}
 
-Transformirajmo kategoričke varijable u dummy varijable. 
-```{r, collapse=TRUE}
+students_org  %>% summarise(
+          IQR.G3_mat = IQR(G3_mat),
+          IQR.G3_por = IQR(G3_por),
+            ) -> summary.result4
+summary.result4
 
+students_org  %>% summarise(
+          Var.G3_mat = var(G3_mat),
+          Var.G3_por = var(G3_por),
+            ) -> summary.result5
+summary.result5
+
+
+students_org  %>% summarise(
+          sd.G3_mat = sd(G3_mat),
+          sd.G3_por = sd(G3_por),
+            ) -> summary.result6
+summary.result6
+
+```
+
+Ako gledamo raspršenost varijabli vidimo da ocjene iz portugalskog jezika imaju manje sve tri mjere (IQR, varijanca i standardna devijacija) vidimo da se ocjene iz portugalskog manje manje odmiču od srednje vrijednosti nego ocjene iz matematike.
+
+
+```{r, echo=FALSE}
+boxplot(students_org$G3_mat, students_org$G3_por, 
+        names = c('konačna ocjena iz matematike','konacna ocjena iz portugalskog'),
+        main='Boxplot konacnih ocjena iz matematike i portugala')
+
+```
+
+```{r, echo=FALSE}
+hist(students_org$G3_mat, 
+     breaks=seq(0, 20),
+     main='Histogram ocjena iz matematike',
+     xlab='Ocjena')
+```
+
+```{r, echo=FALSE}
+hist(students_org$G3_por, 
+     breaks=seq(0, 20),
+     main='Histogram ocjena iz portugalskog',
+     xlab='Ocjena')
+```
+
+Prije testa varijance radimo provjeru normalnosti podataka pomoću qqplotova te Lilliefors i Kolmogorov-Smirnov testova:
+
+```{r}
+qqnorm(students_org$G3_mat, pch = 1, frame = FALSE,main='Matematika')
+qqline(students_org$G3_mat, col = "steelblue", lwd = 2)
+qqnorm(students_org$G3_por, pch = 1, frame = FALSE,main='Portugalski')
+qqline(students_org$G3_por, col = "steelblue", lwd = 2)
+```
+
+```{r}
+print('Matematika:')
+lillie.test(students_org$G3_mat)["p.value"]
+ks.test(students_org$G3_mat, "pnorm", mean(students_org$G3_mat), sd(students_org$G3_mat))["p.value"]
+
+print('Portugalski:')
+lillie.test(students_org$G3_por)["p.value"]
+ks.test(students_org$G3_por, "pnorm", mean(students_org$G3_por), sd(students_org$G3_por))["p.value"]
+
+```
+Jako male p-vrijednosti kod Lilliefors i Kolmogorov-Smirnov testova dolaze zbog repova s lijeve strane.
+Grafički, na temelju rezultata ordeđujemo da za sve skupove vrijedi da proizlaze iz normalne distribucije ali s opaskom da postoje stršeće vrijednosti na lijeovj strani distribucije. 
+
+## F-test
+
+Važno je napomenuti da je test o varijanci iznimno osjetljiv na normalnost. Test će biti proveden zbog vježbe ali njegov rezultat se neće uzeti u obzir.
+
+```{r}
+var(students_org$G3_mat)
+var(students_org$G3_por)
+
+```
+```{r}
+var.test(students_org$G3_mat, students_org$G3_por)
+```
+Zbog jako male vrijednosti odbacujemo hipotezu H0 da su varijance dva uzorka jednake.
+
+## T-test
+
+```{r}
+t.test(students_org$G3_por, students_org$G3_mat, 
+       alternative = "greater",
+       var.equal = FALSE)
+
+
+```
+Zbog jako male p-vrijednosti odbacujemo hipotezu H0 da su prosjeci ocjena jednaki u korist hipoteze H1 da je prosjek ocjena iz portugalskog značajno veći od prosjeka ocjena iz matematike. 
+
+
+
+
+
+
+# Kako vrijeme putovanja do škole utjeće na uspjeh učenika?
+
+Na ovo pitanje odgovirit ćemo ANOVA-om. 
+Pretpostavke ANOVA-e su:
+
+* nezavisnost pojedinih podataka u uzorcima
+* normalna razdioba podataka
+* homogenost varijanci među populacijama
+
+Postavljamo hipotezu H0 koja glasi, srednja vrijednost grupa su podjednake.
+$$H_{0}: \mu_{1}=\mu_{2}=\ldots=\mu_{k}$$
+$$H_{1}: \neg H_{0}$$
+
+S obizrom da se radi o različitim školama i različitim predmetima možemo pretpostaviti nezavisnost ocjena.
+
+Ukoliko nakon provedbe ANOVA-e odbacimo H0 hipotezu možemo zaključiti da su srednje vrijednosti međusobno različite, tj. da vrijeme putovanje utječe na uspjeh učenika.
+
+## Obrada kategoričkih stupaca
+
+Kao grupe koristiti će se vrijednosti iz stupca `traveltime` Prvo je potrebno pretvoriti stupac `traveltime` u kategoričke podatke (s poretkom). `traveltime` se sastoji od 4 mogućih vrijednosti koje definiraju potrebno vrijeme od škole do doma:
+
+* `<` 15min
+* 15 - 30 min
+* 30 - 60 min
+* `>` 60 min
+
+Nadalje, zadnju kategoriju (60min+) spojiti ćemo sa predzadnjom kategorijom (30-60min) zbog toga što se u zadnjoj kategoriji nalaze samo 8 podataka dok se u preostalim kategorijama nalazi puno veći broj podataka.
+
+```{r, colapse=TRUE}
+count(students, students$traveltime)
+students <- students_clean
+students$traveltime <- factor(students$traveltime, ordered=TRUE, labels=c("0 - 15 min", "15 - 30 min", "> 30 min", "> 30 min"))
+```
+
+Za uspjeh koristiti ćemo zboj varijabli `G[1,2,3]_mat` i `G[1,2,3]_por` koji ćemo spremitit u novu varijablu `G_total`.
+
+```{r, colapse=TRUE, results='hide'}
+students$G3_total <- students$G3_mat + students$G3_por
+students$G2_total <- students$G2_mat + students$G2_por
+students$G1_total <- students$G1_mat + students$G1_por
+students$G_total <- students$G1_total + students$G2_total + students$G3_total
+```
+
+
+ANOVA je robustna na blaga odstupanja što se tiče normalnosti. Svejedno, testirati ćemo normalnost varijable `G_total` nad cijelim podatkovnim skupom, a zatim nad  `G_total` za svaku pojedinu grupu `traveltime`-a. 
+
+
+```{r, colapse=TRUE, out.width="80%"}
+model = lm(students$G_total ~ students$traveltime)
+
+par(mfrow=c(1,2)) # 2 plots in 1 row
+
+timeperiod = '0 - 15 min'
+data <- rstandard(model)[students$traveltime==timeperiod]
+qqnorm(data, pch = 1, frame = FALSE, main = timeperiod)
+qqline(data)
+hist(data, main = timeperiod)
+lillie.test(data)["p.value"]
+ks.test(data, 'pnorm', mean=mean(data), sd=sd(data))["p.value"]
+
+timeperiod = '15 - 30 min'
+data <- rstandard(model)[students$traveltime==timeperiod]
+qqnorm(data, pch = 1, frame = FALSE, main = timeperiod)
+qqline(data)
+hist(data, main = timeperiod)
+lillie.test(data)["p.value"]
+ks.test(data, 'pnorm', mean=mean(data), sd=sd(data))["p.value"]
+
+timeperiod = "> 30 min"
+data <- rstandard(model)[students$traveltime==timeperiod]
+qqnorm(data, pch = 1, frame = FALSE, main = timeperiod)
+qqline(data)
+hist(data, main = timeperiod)
+lillie.test(data)["p.value"]
+ks.test(data, 'pnorm', mean=mean(data), sd=sd(data))["p.value"]
+```
+
+Na svakom grafu možemo vidjeti da podaci uglavnom prate normalnu distribuciju uz manji broj stršećih vrijednosti (lijevi rep). Nadalje, `p` vrijednosti Lillieforsovog testa nisu uvijek iznad 0.05 međutim za sve Kolmogorov–Smirnov testove `p` vrijednosti su iznad 0.05.
+
+Lilliefors koristimo ako nam nije poznata varijanca i srednja vrijednost populacije, što je s ovim podacima i slučaj. Poznato je da Lilliefors konzervativniji i da odbacuje hipotezu H0 češće nego Kolmogorov–Smirnov.
+
+S obzirom na manja odstupanja, ne toliko male `p` vrijednosti i grafički izgled `qqnorm`-a i histograma pretpostaviti ćemo da su podaci uzrokovani iz normalne distribucije. 
+
+## Homogenost varijanci - Bartlettov test
+
+Prvo je potrebno postaviti hipoteze H0 i H1:
+$$H_{0}: \sigma_{1}^{2}=\sigma_{2}^{2}=\ldots=\sigma_{k}^{2}$$
+$$H_{1}: \neg H_{0}$$
+
+```{r}
+var(students$G_total[students$traveltime=="> 30 min"])
+var(students$G_total[students$traveltime=='15 - 30 min'])
+var(students$G_total[students$traveltime=="> 30 min"])
+bartlett.test(students$G_total ~ students$traveltime)
+```
+Vidimo da su vrijednosti varijance slične. S obzirom da je `p` vrijednost testa veća od 0.05 ne odbacujemo H0 čime zadovoljavamo ANOVA pretpostavku o homogenosti varijanca.
+
+## ANOVA - Jesu li srednje vrijednosti za različite grupe drugačije?
+
+$$H_{0}: \mu_{1}=\mu_{2}=\ldots=\mu_{k}$$
+$$H_{1}: \neg H_{0}$$
+
+```{r}
+boxplot(students$G_total ~ students$traveltime)
+```
+Grafički možemo pretpostaviti da se vrijeme putovanja utječe na uspjeh učenika. Naravno, ANOVA-om je potrebno provjeritit koliko je ta razlika statistički značajna.
+
+```{r}
+model = lm(students$G_total ~ students$traveltime)
+anova(model)
+```
+
+ANOVA nam govori da postoji razlika između grupa `traveltime`. Iako nije strogo značajna i dalje se radi o značajnoj `p` vrijednosti koja se nalazi između `0.001` i `0.01`. Možemo zaključiti da za različite grupe vremena putovanja imaju utjecaj na učenikov uspjeh.
+
+
+
+# Predviđanje uspjeha na kraju školske godine drugim varijablama iz skupa podataka
+
+Transformirajmo kategoričke varijable u dummy varijable.
+
+```{r, collapse=TRUE, results='hide'}
 require(fastDummies)
 students_dummies=dummy_cols(students, remove_first_dummy = TRUE, remove_selected_columns = TRUE)
-
 students_dummies
 
 ```
+
 Sada provodimo individualne jednostavne linearne regresije G3_mat i G3_por  ovisno o svakoj od varijabli iz skupa, te spremamo $R^2$ vrijednosti i p-vrijednosti F-testova za jednostavnu linearnu regresiju u tablice $\text{modelsMat}$ i $\text{modelsPor}$
+
 ```{r, collapse=TRUE}
 varName=c()
 rSquaredM=c()
@@ -761,21 +742,28 @@ for(i in 1:ncol(students_dummies)){
   modelsPor=data.frame(varName, rSquaredP, pValueofFP)
 }
 ```
-##Predviđanje konačne ocjene iz matematike
+
+## Predviđanje konačne ocjene iz matematike
+
 Pogledajmo koje su se varijable ispostavile najboljim prediktorima za $\text{G3\_mat}$ (poredano po $R^2$ vrijednostima)
+
 ```{R, collapse=TRUE}
  modelsMat[order(-modelsMat$rSquaredM), ]
 
 ```
+
 Razmotrit ćemo prvih 10 najboljih prediktora. Najprije provjerimo jesu li neke od tih varijabli visoko korelirane:
 
 ```{r, collapse=TRUE}
 cor(cbind(students_dummies$G2_mat,students_dummies$G1_mat,students_dummies$G2_por,students_dummies$G1_por,students_dummies$failures_mat,students_dummies$higher_yes,students_dummies$Medu,students_dummies$age,students_dummies$absences_por,students_dummies$Fedu ))
 ```
+
 Kao i očekivano ocjene G2_mat i G1_mat visoko su korelirane, isto kao i G2_por i G1_por, a značajna je i korelacija između ocjena matematike i portugala. Osim toga uočimo koreliranost razina edukacije majke i oca.
+
 ```{r, collapse=TRUE}
 cor(students_dummies$Medu, students_dummies$Fedu)
 ```
+
 Zasad nećemo eliminirati nijedan regresor. Izgradimo linearni model od gore izdvojenih varijabli za G3_mat:
 
 ```{r, collapse=TRUE}
@@ -783,20 +771,25 @@ multiMat=lm(G3_mat~G2_mat + G1_mat + G2_por+ G1_por+ failures_mat + higher_yes+ 
 summary(multiMat)
 
 ```
+
 Pojednostavimo sad model, uzevši 5  varijabli s najnižim p-vrijednostima
+
 ```{r, collapse=TRUE}
 multiMat2=lm(data=students_dummies, G3_mat~G2_mat+G1_mat+age+ failures_mat+G2_por)
 summary(multiMat2)
 ```
+
 Nešto nam se smanjio $R^2$, no prilagođeni $R^2$ se uvećao-indikacija da smo eliminirali neke nepotrebne regresore.
 
 Dodatno pojednostavljenje modela smanjuje prilagođeni $R^2$
+
 ```{r, collapse=TRUE}
 multiMat3=lm(data=students_dummies, G3_mat~G2_mat+G1_mat+age)
 summary(multiMat3)
 ```
 
 Provjerimo normalnost reziduala
+
 ```{r, collapse=TRUE}
 hist(rstandard(multiMat))
 hist(rstandard(multiMat2))
@@ -806,30 +799,38 @@ ks.test(rstandard(multiMat),'pnorm')
 ks.test(rstandard(multiMat2),'pnorm')
 
 ```
+
 Reziduali ne nalikuju normalnoj distribuciji.
 Promotrimo ih u ovisnosti o predviđenoj vrijednosti.
+
 ```{r, collapse=TRUE}
 plot(multiMat$fitted.values, multiMat$residuals)
 plot(multiMat2$fitted.values, multiMat$residuals)
 ```
+
 Zanimljivo je još i pogledati koliko dobro možemo predvidjeti konačnu ocjenu iz matematike bez ikakvog znanja o drugim ocjenama, oslanjajući se na ostalih 6 od 10 najboljih prediktora
+
 ```{r, collapse=TRUE}
 bezOcjenaMat=lm(data=students_dummies, G3_mat~failures_mat + higher_yes + Medu + age + absences_por + Fedu )
 summary(bezOcjenaMat)
 ```
 Ovakav model objašnjava svega 18% varijance u promatranoj varijabli. Kao i očekivano same ocjene najbolji su prediktor konačne ocjene, ali  i neke druge varijable nisu potpuno irelevantne.
 
-##Predviđanje konačne ocjene iz portugala
+## Predviđanje konačne ocjene iz portugala
 Pogledajmo koje su se varijable ispostavile najboljim prediktorima za $\text{G3\_por}$ (poredano po $R^2$ vrijednostima)
 
 ```{r, collapse=TRUE}
 modelsPor[order(-modelsPor$rSquaredP),]
 ```
+
 Razmotrit ćemo prvih 13 najboljih prediktora. Najprije provjerimo jesu li neke od tih varijabli visoko korelirane:
+
 ```{r, collapse=TRUE}
 cor(cbind(students_dummies$G2_por,students_dummies$G1_por,students_dummies$G1_mat,students_dummies$G2_mat,students_dummies$failures_mat,students_dummies$failures_por,students_dummies$higher_yes,students_dummies$Dalc,students_dummies$studytime,students_dummies$Walc, students_dummies$sex_M, students_dummies$Medu,students_dummies$address_U))
 ```
+
 Otprije znamo za visoku koreiranost ocjena, a učimo još i visoku koreliranost razina konzumacija alkohola vikendom i radnim danima.
+
 ```{r, collapse=TRUE}
 cor(students_dummies$Dalc, students_dummies$Walc)
 ```
@@ -838,13 +839,17 @@ Zasad ne odbacujući nijedan regresor izradimo linearni model za prethodno izdvo
 multiPor=lm(data=students_dummies, G3_por~G2_por+G1_por+G1_mat+G2_mat+failures_mat+failures_por+higher_yes+Dalc+studytime+Walc+sex_M+Medu+address_U)
 summary(multiPor)
 ```
+
 Pojednostavimo sad uzevši 8 variabli s najnižim p-vrijednostima:
+
 ```{r, collapse=TRUE}
 multiPor2=lm(data=students_dummies, G3_por~G2_por+ failures_por + G1_mat+G1_por+ G2_mat+address_U+sex_M+failures_mat)
 summary(multiPor2)
 
 ```
+
 Ovaj skup varijabli ispostavlja se daje najveći prilagođeni $R^2$:
+
 ```{r, collapse=TRUE}
 #npr ograničavajući na 6 regresora smanjuje se prilagođeni R^2
 multiPor3=lm(data=students_dummies, G3_por~G2_por+ failures_por + G1_mat+G1_por+ G2_mat+sex_M)
@@ -860,8 +865,10 @@ ks.test(rstandard(multiPor),'pnorm')
 ks.test(rstandard(multiPor2),'pnorm')
 
 ```
+
 Reziduali nalikuju normalnoj distribuciji nešto više nego kod modela za konačnu ocjenu iz matematike, ali i dalje ne osobito.
 Promotrimo ih u ovisnosti o predviđenoj vrijednosti.
+
 ```{r, collapse=TRUE}
 plot(multiPor$fitted.values, multiPor$residuals)
 plot(multiPor2$fitted.values, multiPor2$residuals)
@@ -873,4 +880,5 @@ Promotrimo još koliko dobro možemo predvidjeti konačnu ocjenu iz portugalskog
 bezOcjenaPor=lm(data=students_dummies, G3_por~failures_mat+failures_por+higher_yes+Dalc+studytime+Walc+sex_M+Medu+address_U)
 summary(bezOcjenaPor)
 ```
+
 Model bez ocjena za portugalski objašnjava skoro 30% varijance u promatranoj varijabli. Značajno poboljšanje u odnosu na model bez ocjena za matematiku.
