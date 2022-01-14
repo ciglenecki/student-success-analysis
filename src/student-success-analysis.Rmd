@@ -283,6 +283,8 @@ hist(students_org$G3_por,
 
 
 ```
+Prije testa varijance radimo provjeru normalnosti podataka pomoću qqplotova te Lilliefors i Kolmogorov-Smirnov testova:
+
 ```{r}
 
 qqnorm(students_org$G3_mat, pch = 1, frame = FALSE,main='Matematika')
@@ -297,6 +299,24 @@ qqline(students_org$G3_por, col = "steelblue", lwd = 2)
 
 
 ```
+
+```{r}
+print('Matematika:')
+lillie.test(students_org$G3_mat)["p.value"]
+ks.test(students_org$G3_mat, "pnorm", mean(students_org$G3_mat), sd(students_org$G3_mat))["p.value"]
+
+print('Portugalski:')
+lillie.test(students_org$G3_por)["p.value"]
+ks.test(students_org$G3_por, "pnorm", mean(students_org$G3_por), sd(students_org$G3_por))["p.value"]
+
+```
+Jako male p-vrijednosti kod Lilliefors i Kolmogorov-Smirnov testova dolaze zbog repova s lijeve strane.
+Grafički, na temelju rezultata ordeđujemo da za sve skupove vrijedi da proizlaze iz normalne distribucije ali s opaskom da postoje stršeće vrijednosti na lijeovj strani distribucije. 
+
+## F-test
+
+Važno je napomenuti da je test o varijanci iznimno osjetljiv na normalnost. Test će biti proveden zbog vježbe ali njegov rezultat se neće uzeti u obzir.
+
 ```{r}
 var(students_org$G3_mat)
 var(students_org$G3_por)
@@ -306,6 +326,8 @@ var(students_org$G3_por)
 var.test(students_org$G3_mat, students_org$G3_por)
 ```
 Zbog jako male vrijednosti odbacujemo hipotezu H0 da su varijance dva uzorka jednake.
+
+## T-test
 
 ```{r}
 t.test(students_org$G3_por, students_org$G3_mat, 
