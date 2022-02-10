@@ -1,6 +1,6 @@
 ---
-title: "SAP - Uspjeh učenika u nastavi"
-author: "Petar Dragojević, Magda Radić, Tomislav Prhat, Matej Ciglenečki"
+title: "Statistical Data Analysis - student success analyisis"
+author: "Matej Ciglenečki, Petar Dragojević, Magda Radić, Tomislav Prhat"
 output:
   pdf_document: default
   html_document: default
@@ -23,10 +23,10 @@ options(warn=-1)
 ```
 
 
-# Deskriptivna analiza
+# Descriptive analyisis
 
-## Osnove
-Učitavamo podatke, provjeravamo kojeg je oblika skup podataka i od kojih se stupaca sastoji.
+## Introduction
+Load the data, check dimension, columns, head and summary
 ```{r, colapse=TRUE, results='hide'}
 students_org <- readxl::read_excel("student_data.xlsx")
 
@@ -36,36 +36,32 @@ dim(students_org)
 # Show column names
 names(students_org)
 ```
-Provjeravamo prvih par redataka podatkovnog skupa
+
 ```{r, colapse=TRUE, results='hide'}
 # Show first few rows
 head(students_org)
 ```
 
-Saznajemo osnovne podatke za svaki stuapc 
 ```{r, colapse=TRUE, results='hide'}
 # Show details for each column
 summary(students_org)
 ```
 
-Provjeravamo koji su stupci kojeg tipa: numerički, kategorički...
+Find what's the type of columns: numerical, chacaters...
 ```{r, colapse=TRUE, results='hide'}
-# Check the class of the column. "numeric", "character"...
 sapply(students_org, class)
 ```
 
-Provjeravamo postoje li nevažeći podaci koji prelaze maksimalne vrijednosti specificirane u uputama o podacima. Sve vrijednosti su dozvoljenom intervalu.
+Checking for invalid data. For example, does the data exceed maximal value specified in the dataset documentation? (it doesn't)
 ```{r, colapse=TRUE, results='hide'}
 colMax <- students_org %>%
   select(where(is.numeric)) %>%
   sapply(., max, na.rm = TRUE)
 colMax
-# Every column has normal maximum value
 ```
-Vrijednosti svih atributa padaju u dozvoljen interval
+Values of each column do not exceed values specified in the dataset documentation 
 
-
-Izbacivanje svih NaN/NA/null vrijednosti iz podatkovnog skupa. Na sreću, takvih vrijednosti nije bilo.
+Removing NaN/NA/null values from the dataset. Luckily, there was no such values.
 ```{r, colapse=TRUE, results='hide'}
 # Are there any na values?
 students_org %>% filter(is.na(.))
@@ -81,31 +77,28 @@ students_clean <- students
 
 ```{r, eval=FALSE, echo=FALSE}
 # Testing
-# pronadi char stupce (tj. kategoricke varijable)
+# find char columns (categorical)
 charcols <- names(students %>% select(where(is_character)))
 charcols
 
 students_char = students
 
-# pretvori char stupce u faktore (kategoricke varijable)
+#transform char to factors
 students_char[charcols] <- lapply(students_char[charcols] , function(x) factor(x,
                                   ordered = TRUE))
 
-# one hot encodeaj kateogricke varijable
-# sad stupci vise nisu vrijednosti char nego su 1 ili 0 
-# npr. MALE 0 (zensko)
-# MALE 1 (musko)
-
+# one hot encode categorical
 students_dummy = dummy_cols(students_char, charcols, remove_selected_columns = TRUE)
-# ako ti treba, cor tablica radi!
 # cor(students_dummy)
-
 summary(lm(students_char$G3_mat ~ students_char$traveltime * students_char$higher))
 ```
 
-# Zavisnost između edukacije roditelja i uspješnosti
+# Dependence between parent's education and students success
+author: Petar Dragojević - advised by the rest of the group
+
+Transforming the grades to the American grading system
 ```{r}
-#Mat_grade i Por_grade prebacivanje ocjena u engleski način ocjenjivanja
+
 students <- students %>% mutate(Mat_grade =
                      case_when(G3_mat < 10 ~ "F", 
                                G3_mat >= 10 & G3_mat < 14 ~ "C",
@@ -118,7 +111,10 @@ students <- students %>% mutate(Por_grade =
                                G3_por >= 14 & G3_mat < 16 ~ "B",
                                G3_por >= 16 ~ "A")
 )
-#MeduMod i FeduMod grupiranje edukacije roditelja u veće podgrupe 
+```
+
+Grouping father's and mother's education to the larger subgroups
+```{r}
 students <- students %>% mutate(MeduMod =
                      case_when(Medu == "0" | Medu == "1" | Medu == "2" ~ "0", 
                                Medu == "3" ~ "1",
@@ -129,7 +125,10 @@ students <- students %>% mutate(FeduMod =
                                Fedu == "3" ~ "1",
                                Fedu == "4" ~ "2")
 )
-#za edukaciju roditelja uzimamo onu koja je veća
+```
+
+Highest parent education is defined as a maximum between father's and mother's education
+```{r}
 students$highestparentedu <- pmax(students$MeduMod, students$FeduMod)
 ```
 
@@ -143,16 +142,17 @@ boxplot(students$G3_mat[students$highestparentedu=="0"], students$G3_mat[student
 boxplot(students$G3_por[students$highestparentedu=="0"], students$G3_por[students$highestparentedu=="1"], students$G3_por[students$highestparentedu=="2"], names = c("low", "middle", "high"),xlab="Highest parent education",ylab="Por final grade")
 ```
 
-H0: Ocjena iz matematike i edukacija više educiranog roditelja su nezavisna obilježja
+H0: Mathemathics grade and highest parent education are independent
 
-H1: Ocjena iz matematike i edukacija više educiranog roditelja su zavisna obilježja
+H1: Mathemathics grade and highest parent education are not independent
+
 ```{r}
 tbl = table(students$highestparentedu, students$Mat_grade)
 added_margins_tbl = addmargins(tbl)
 print(added_margins_tbl)
 chisq.test(tbl,correct=F)
 ```
-p-value testa iznosi manje od 0.05 stoga odbacujemo hipotezu H0, te zaključujemo da su edukacija više educiranog roditelja i završna ocjena iz matematike zavisne.
+p-value of the test is less than 0.05. We reject the H0 hypotehsis in favour of hypothesis H1 and we conclude that education of higher educated parent and mathematics grade are dependent attributes.
 
 H0: Ocjena iz matematike i edukacija majke su nezavisna obilježja
 
