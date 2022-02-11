@@ -133,13 +133,13 @@ students$highestparentedu <- pmax(students$MeduMod, students$FeduMod)
 ```
 
 ```{r, colapse=TRUE, echo=FALSE}
-boxplot(students$G3_mat[students$MeduMod=="0"], students$G3_mat[students$MeduMod=="1"], students$G3_mat[students$MeduMod=="2"], students$G3_mat[students$FeduMod=="0"], students$G3_mat[students$FeduMod=="1"], students$G3_mat[students$FeduMod=="2"], names = c("M/low", "M/middle", "M/high", "F/low", "F/middle", "F/high"),xlab="Mother/Father education",ylab="Mat final grade")
+boxplot(students$G3_mat[students$MeduMod=="0"], students$G3_mat[students$MeduMod=="1"], students$G3_mat[students$MeduMod=="2"], students$G3_mat[students$FeduMod=="0"], students$G3_mat[students$FeduMod=="1"], students$G3_mat[students$FeduMod=="2"], names = c("M/low", "M/middle", "M/high", "F/low", "F/middle", "F/high"),xlab="Mother/Father education",ylab="Mathematics final grade")
 
-boxplot(students$G3_por[students$MeduMod=="0"], students$G3_por[students$MeduMod=="1"], students$G3_por[students$MeduMod=="2"], students$G3_por[students$FeduMod=="0"], students$G3_por[students$FeduMod=="1"], students$G3_por[students$FeduMod=="2"], names = c("M/low", "M/middle", "M/high", "F/low", "F/middle", "F/high"),xlab="Mother/Father education",ylab="Por final grade")
+boxplot(students$G3_por[students$MeduMod=="0"], students$G3_por[students$MeduMod=="1"], students$G3_por[students$MeduMod=="2"], students$G3_por[students$FeduMod=="0"], students$G3_por[students$FeduMod=="1"], students$G3_por[students$FeduMod=="2"], names = c("M/low", "M/middle", "M/high", "F/low", "F/middle", "F/high"),xlab="Mother/Father education",ylab="Portuguese final grade")
 
-boxplot(students$G3_mat[students$highestparentedu=="0"], students$G3_mat[students$highestparentedu=="1"], students$G3_mat[students$highestparentedu=="2"], names = c("low", "middle", "high"),xlab="Highest parent education",ylab="Mat final grade")
+boxplot(students$G3_mat[students$highestparentedu=="0"], students$G3_mat[students$highestparentedu=="1"], students$G3_mat[students$highestparentedu=="2"], names = c("low", "middle", "high"),xlab="Highest parent education",ylab="Mathematics final grade")
 
-boxplot(students$G3_por[students$highestparentedu=="0"], students$G3_por[students$highestparentedu=="1"], students$G3_por[students$highestparentedu=="2"], names = c("low", "middle", "high"),xlab="Highest parent education",ylab="Por final grade")
+boxplot(students$G3_por[students$highestparentedu=="0"], students$G3_por[students$highestparentedu=="1"], students$G3_por[students$highestparentedu=="2"], names = c("low", "middle", "high"),xlab="Highest parent education",ylab="Portuguese final grade")
 ```
 
 H0: Mathemathics grade and highest parent education are independent
@@ -152,87 +152,92 @@ added_margins_tbl = addmargins(tbl)
 print(added_margins_tbl)
 chisq.test(tbl,correct=F)
 ```
-p-value of the test is less than 0.05. We reject the H0 hypotehsis in favour of hypothesis H1 and we conclude that education of higher educated parent and mathematics grade are dependent attributes.
+p-value of the test is less than 0.05. We reject the H0 hypothesis in favor of hypothesis H1 and we conclude that education of higher educated parent and mathematics grade are dependent attributes.
 
-H0: Ocjena iz matematike i edukacija majke su nezavisna obilježja
+H0: mathematics grade and mother's education are independent
 
-H1: Ocjena iz matematike i edukacija majke su zavisna obilježja
+H1: mathematics grade and mother's education are not independent
+
 ```{r}
 tbl = table(students$MeduMod, students$Mat_grade)
 added_margins_tbl = addmargins(tbl)
 print(added_margins_tbl)
 chisq.test(tbl,correct=F)
 ```
-p-value Testa nezavisnosti iznosi manje od 0.05 stoga odbacujemo hipotezu H0, te zaključujemo da su edukacija majke i završna ocjena iz matematike zavisne.
+p-value of the independence test is less than 0.05. Therefore, we reject the H0 hypothesis in favor of H1 hypothesis. We conclude that mother's education and mathematics grade are dependent.
 
-H0: Ocjena iz matematike i edukacija oca su nezavisna obilježja
 
-H1: Ocjena iz matematike i edukacija oca su zavisna obilježja
+H0: mathematics grade and father's education are independent
+
+H1: mathematics grade and father's education are not independent
+
 ```{r}
 tbl2 = table(students$FeduMod, students$Mat_grade)
 added_margins_tbl2 = addmargins(tbl2)
 print(added_margins_tbl2)
 chisq.test(tbl2,correct=F)
 ```
-p-value iznosi više od 0.05 pa ne možemo odbaciti hipotezu H0.
+p-value of the independence test is higher than 0.05. Therefore, we do not reject the H0 hypothesis.
 
+H0: Portuguese grade and highest parent education are independent
 
-H0: Ocjena iz portugala i edukacija više educiranog roditelja su nezavisna obilježja
-
-H1: Ocjena iz portugala i edukacija više educiranog roditelja su zavisna obilježja
+H1: Portuguese grade and highest parent education are not independent
 ```{r}
 tbl = table(students$highestparentedu, students$Por_grade)
 added_margins_tbl = addmargins(tbl)
 print(added_margins_tbl)
 chisq.test(tbl,correct=F)
 
-#očekivane frekvencije svih razreda moraju biti veće ili jednake 5
 for (col_names in colnames(added_margins_tbl)){
   for (row_names in rownames(added_margins_tbl)){
     if (!(row_names == 'Sum' | col_names == 'Sum') ){
-      cat('Očekivane frekvencije za razred ',col_names,'-',row_names,': ',(added_margins_tbl[row_names,'Sum'] * added_margins_tbl['Sum',col_names]) / added_margins_tbl['Sum','Sum'],'\n')
+      cat('Expected frequency for class',col_names,'-',row_names,': ',(added_margins_tbl[row_names,'Sum'] * added_margins_tbl['Sum',col_names]) / added_margins_tbl['Sum','Sum'],'\n')
     }
   }
 }
-#Vidimo da postoje očekivane frekvencije manje od 5 pa koristimo fisher.test() umjesto chiq.test()
-fisher.test(tbl)
 ```
+p-value of the test is less than 0.05. We reject the H0 hypothesis in favor of hypothesis H1 and we conclude that education of higher educated parent and Portuguese grade are dependent attributes.
 
-chisq.test je nepouzdan pošto su očekivane frekvencije pojedinih  razreda manje od 5, radi toga koristimo fisher.test. p-value Fesherovog testa iznosi manje od 0.05 stoga odbacujemo hipotezu H0, te zaključujemo da su edukacija više educiranog roditelja i završna ocjena iz portigala zavisne.
+Expected frequency for class (grade=A, education=1) 4.391753 could be problematic for Chi-square test of independence. However, the the assumption of the test is that expected frequency should be 5 or more **in at least 80%** of the cells. In which case, Fisher's exact test should be used since it's used for smaller sample sizes.
 
-H0: Ocjena iz portugala i edukacija majke su nezavisna obilježja
 
-H1: Ocjena iz portugala i edukacija majke su zavisna obilježja
+H0: Portuguese grade and mother's education are independent
+
+H1: Portuguese grade and mother's education are not independent
 ```{r}
 tbl = table(students$MeduMod, students$Por_grade)
 added_margins_tbl = addmargins(tbl)
 print(added_margins_tbl)
 chisq.test(tbl,correct=F)
 ```
-p-value Testa nezavisnosti iznosi manje od 0.05 stoga odbacujemo hipotezu H0, te zaključujemo da su edukacija majke i završna ocjena iz portugala zavisne.
+p-value of the independence test is less than 0.05. Therefore, we reject the H0 hypothesis in favor of H1 hypothesis. We conclude that mother's education and Portuguese grade are dependent.
 
-H0: Ocjena iz portugala i edukacija oca su nezavisna obilježja
+H0: Portuguese grade and father's education are independent
 
-H1: Ocjena iz portugala i edukacija oca su zavisna obilježja
+H1: Portuguese grade and father's education are not independent
 ```{r}
 tbl2 = table(students$FeduMod, students$Por_grade)
 added_margins_tbl2 = addmargins(tbl2)
 print(added_margins_tbl2)
 chisq.test(tbl2,correct=F)
-#očekivane frekvencije svih razreda moraju biti veće ili jednake 5
+
 for (col_names in colnames(added_margins_tbl2)){
   for (row_names in rownames(added_margins_tbl2)){
     if (!(row_names == 'Sum' | col_names == 'Sum') ){
-      cat('Očekivane frekvencije za razred ',col_names,'-',row_names,': ',(added_margins_tbl2[row_names,'Sum'] * added_margins_tbl2['Sum',col_names]) / added_margins_tbl2['Sum','Sum'],'\n')
+      cat('Expected frequency for class ',col_names,'-',row_names,': ',(added_margins_tbl2[row_names,'Sum'] * added_margins_tbl2['Sum',col_names]) / added_margins_tbl2['Sum','Sum'],'\n')
     }
   }
 }
-#Vidimo da postoje očekivane frekvencije manje od 5 pa koristimo fisher.test() umjesto chiq.test()
-fisher.test(tbl)
 ```
-Kod usporedbe s edukacijom oca koristimo Fisherov test gdje je p-value manji od 0.05 pa odbacujemo H0 i zaključujemo da su edukacija oca i završna ocjena iz portugala zavisne.
+There are 2 expected frequency whose value is less than 5. This is close to 80% of the 12 values which is why Fisher's exact test will be used in this case.
 
-# Koja škola je bolja u matematici a koja u portugalskom?
+```{r}
+fisher.test(tbl2)
+```
+
+p-value of the test is higher than 0.05. We do not reject the H0 hypothesis in favor of hypothesis H1.
+
+# Which school is better in matemathics and which in Portuguese
 
 ```{r, colapse=TRUE, eval=FALSE, echo=FALSE}
 ## Matej Ciglenečki

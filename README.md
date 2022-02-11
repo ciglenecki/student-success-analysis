@@ -73,3 +73,54 @@ if P = 0 then data comes from different distributions
 - [ ] Question (Magda): Which variable is the best predictor of success on a specific subject
   - [ ] Later, create add top predicting variables for all subjects
 - [ ] Question (Petar): How does student's time put into studying result in the final grade? 
+
+
+
+# Notes 20.01
+
+Predviđanje uspjeha - koje varijable najvise utjecu
+
+- G3_mat - uspjeh za mat
+- R^2 - koliko varijance u izlaznoj varijabli (G3_mat) objasnjava neka varijabla
+
+R^2 - veća vrijednost - to je bolji model, tj. više objašnjava vrijednosti (varijance)
+
+Pogledati detaljno R^2
+
+p-vrijednost u ovom kontesktu:
+- usporeduju se modeli medusobono na nacin da se izostavlja jedna varijabla
+- što je p niži to varijabla ima veći utjecaj
+- p - vjerojatnost da je ta varijabla nesignifikantna
+
+Multiple R-squared se povecava dodajemo nebitne varijable 
+
+Pretpostavka - reziduali moraju biti normalni
+- u nasem slucaju nisu 
+
+
+ANOVA
+- uzorci moraju biti izvuceni iz normalne distribucuje
+- moraju li svi podaci proizlaziti iz normalne distribucije (?)
+
+lm(students$G_total ~ students$traveltime)
+
+- regresor je students$traveltime (provjeriti jel to u redu naziv)
+- pogledati naziv za (students$G_total)
+
+
+model = lm(students$G_total ~ students$traveltime)
+
+summary(model)
+
+traveltime."15 - 30 min"
+traveltime."> 30 min"
+
+
+Detaljnije pogledati KS vs Lillie
+
+
+Pogledati kako K-squared Bartlett odjeđuje p
+
+Naučiti ANOVU (i ostalo)
+
+Provjeritit zasto su reziduali "neagtivni" (jesu li rezudiali uopce)
