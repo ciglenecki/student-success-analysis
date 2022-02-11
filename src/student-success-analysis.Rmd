@@ -238,17 +238,18 @@ fisher.test(tbl2)
 p-value of the test is higher than 0.05. We do not reject the H0 hypothesis in favor of hypothesis H1.
 
 # Which school is better in matemathics and which in Portuguese
+author: Matej Ciglenečki - advised by the rest of the group
 
 ```{r, colapse=TRUE, eval=FALSE, echo=FALSE}
-## Matej Ciglenečki
-
 students$test <- students$absences_mat
 
-students$test  <- students %>% mutate(quantile = ntile(test,5))%>%group_by(quantile) %>% select(quantile)
-boxplot(students$G3_mat ~ unlist(students$test))
+students$test  <- students %>% mutate(quintile = ntile(test,5))%>%group_by(quintile) %>% select(quintile)
+boxplot(students$G3_mat ~ unlist(students$test), names = c("QU1","QU2","QU3","QU4","QU5"),xlab="Quintiles of absences in mathematics ",ylab="Mathematics absences")
 ```
+two (2) t-tests will be performed on four (4) different datasets. Dataset is split in four (4) different datasets (GP, MS) x (Mathematics, Portuguese): `gp_mat`, `gp_por`, `ms_mat`, `ms_por`
 
-Na ovo pitanje odgovoriti ćemo provedbom t-testa koristeći 4 različita podatkovna skupa. Razdvajanje podatkovnog skupa na dvije škole (GP, MS) te na dva predmeta (matematika i portugalski) dobivamo sljedeće podatkovne skupove: `gp_mat`, `gp_por`, `ms_mat`, `ms_por`
+Mean grades for each subject will be used to decide a direction (left or right) of one-sided t-test. School with higher mean grade will be in favor of alternative hypothesis H1.
+
 
 ```{r, colapse=TRUE, results='hide'}
 # Show average grade for all schools
@@ -276,6 +277,7 @@ ms_por <- students_final_grade %>%
   select(G3_por, school)
 ```
 
+Columns will be renamed for easier usage.
 ```{r, echo=FALSE, results='hide' }
 # Rename all columns to "grade"
 gp_mat <- gp_mat %>% rename(grade = G3_mat)
@@ -284,25 +286,13 @@ ms_mat <- ms_mat %>% rename(grade = G3_mat)
 ms_por <- ms_por %>% rename(grade = G3_por)
 ```
 
+## Relative frequencies of subjects
 
+Graph shows relative frequencies and means (vertical dashed lines) in mathematics grade for each school. On each graph, means are compared and school with a higher mean (vertical line to the right) is taken as an alternative to the one-sided t-test. T-test will check a statistical significance between two means. 
+
+## Mathemathics - relative frequencies and mean
 ```{r, colapse=TRUE, echo=FALSE}
-# TODO: can this data be grouped and used dynamically? (support multiple schools and mutliple subjects)
-# scale_this <- function(x){
-#   (x - mean(x, na.rm=TRUE)) / sd(x, na.rm=TRUE)
-# }
-# gp_mat_scaled <- gp_mat %>% mutate(G3_mat = scale_this(G3_mat))
-# gp_por_scaled <- gp_por %>% mutate(G3_por = scale_this(G3_por))
-# ms_mat_scaled <- ms_mat %>% mutate(G3_mat = scale_this(G3_mat))
-# ms_por_scaled <- ms_por %>% mutate(G3_por = scale_this(G3_por))
-```
-
-## Prikaz relativnih frekvencija predmeta i škola
-
-Iz grafa relativne frekvencije možemo usporediti vertikalne crte koje određuju srednju vrijednost ocjene za pojedinu školu i također dobiti osjećaj za normalnost podataka. Konstruirati ćemo jednosmjerni T-test a alternativa će ići u korist škole koja ima veću srednju vrijednost čime ćemo provjeriti je li ta škola statistički značajno bolja u matematici/portugalskom.
-
-## Matematika - prikaz relativnih frekvencija i srednjih vrijednosti
-```{r, colapse=TRUE, echo=FALSE}
-# Plot math -- final grade
+# Plot mathemathics -- final grade
 ggplot(gp_mat, aes(x = grade, y = (..count.. / sum(..count..)))) +
   geom_histogram(bins = 20, aes(color = school, fill = school), alpha = 0.5) +
   geom_histogram(data = ms_mat, bins = 20, aes(color = school, fill = school), alpha = 0.3) +
@@ -312,9 +302,8 @@ ggplot(gp_mat, aes(x = grade, y = (..count.. / sum(..count..)))) +
   ylab("Relative frequency") +
   labs(title = "Mathematics - final grade for each school")
 ```
-Na grafu za matematiku vidi se da škola `GP` ima veću srednju vrijednost od škole `MS`
 
-## Portugalski - prikaz relativnih frekvencija i srednjih vrijednosti
+## Portuguese - relative frequencies and mean
 
 ```{r, colapse=TRUE, echo=FALSE}
 # Plot portug -- final grade
@@ -327,9 +316,9 @@ ggplot(gp_por, aes(x = grade, y = (..count.. / sum(..count..)))) +
   ylab("Relative frequency") +
   labs(title = "Portuguese - final grade for each school")
 ```
-Na grafu za portugalski vidi se da škola `GP` ima veću srednju vrijednost od škole `MS`
+On both graphs, we can see that `GP` school has higher a mean of grades in both subjects than `MS` school.
 
-## Provjera normalnosti
+## Normality
 
 ```{r,echo=FALSE,  eval=FALSE, results='hide'}
 ### Ignore this block
@@ -355,62 +344,64 @@ hist(y, breaks=50)
 ks.test(x,y,"pgamma")
 lillie.test(y)
 ```
-Normalnost se provjerva na više načina. U sljedećim koracima biti će prikazani `qqnorm` grafovi i provedeni Lilliefors i Kolmogorov-Smirnov testovi na temelju kojih će se pretpostaviti (ne)normalnost.
-```{r, colapse=TRUE, results='hide'}
+
+Normality can be check in multiple ways. In the following steps, two (2) methods are used:
+* visual (`qqnorm`)
+* quantitative decisions / tests (Lilliefors and Kolmogorov-Smirnov tests)
+```{r, colapse=TRUE}
 nrow(gp_mat)
 nrow(gp_por)
 nrow(ms_mat)
 nrow(ms_por)
 ```
-`n` - broj podataka za matematiku je `331` a za portugalski `39`
+`n` - size of the dataset for mathematics is `331` and `39` for Portuguese.
 
 ```{r, colapse=TRUE, out.width="50%"}
-qqnorm(gp_mat$grade, pch = 1, frame = FALSE, main = "GP school math")
+qqnorm(gp_mat$grade, pch = 1, frame = FALSE, main = "GP school mathemathics")
 qqline(gp_mat$grade)
 lillie.test(gp_mat$grade)["p.value"]
 ks.test(gp_mat$grade, "pnorm", mean(gp_mat$grade), sd(gp_mat$grade))["p.value"]
 
-qqnorm(gp_por$grade, pch = 1, frame = FALSE, main = "GP school portuguese")
+qqnorm(gp_por$grade, pch = 1, frame = FALSE, main = "GP school Portuguese")
 qqline(gp_por$grade)
 lillie.test(gp_por$grade)["p.value"]
 ks.test(gp_por$grade, "pnorm", mean(gp_por$grade), sd(gp_por$grade))["p.value"]
 
-qqnorm(ms_mat$grade, pch = 1, frame = FALSE, main = "MS school math")
+qqnorm(ms_mat$grade, pch = 1, frame = FALSE, main = "MS school mathemathics")
 qqline(ms_mat$grade)
 lillie.test(ms_mat$grade)["p.value"]
 ks.test(ms_mat$grade, "pnorm", mean(ms_mat$grade), sd(ms_mat$grade))["p.value"]
 
-qqnorm(ms_por$grade, pch = 1, frame = FALSE, main = "MS school portuguese")
+qqnorm(ms_por$grade, pch = 1, frame = FALSE, main = "MS school Portuguese")
 qqline(ms_por$grade)
 lillie.test(ms_por$grade)["p.value"]
 ks.test(ms_por$grade, "pnorm", mean(ms_por$grade), sd(ms_por$grade))["p.value"]
 ```
+Tails are emphasised on the left side of the distribution, which is why the `p` value will almost always be less than 0.05 for the Kolmogovor-Smirnov and Lilliefors' test. 
 
-Repovi su prisutni na lijevoj strani podataka zbog čega je `p` vrijednost skoro uvijek manja od 0.05 za Kolmogorov-Smirnov i Lillieforsov test. Grafički, na temelju rezultata ordeđujemo da za sve skupove vrijedi da proizlaze iz normalne distribucije ali s opaskom da postoje stršeće vrijednosti na lijeovj strani distribucije. 
+Visually we can see that in fact data comes from the normal distribution but with a strong remark that the left tail is often present. Although normality is assumed, tests that are sensitive to normality won't be taken into account.
 
-## F-test - test o jednakosti varijanca
+## F-test of equality of variances
 
-Važno je napomenuti da je test o varijanci iznimno osjetljiv na normalnost. Test će biti proveden zbog vježbe ali njegov **rezultat se neće uzeti u obzir** jer podaci nisu normalno distribuirani.
+It's important to emphasize that F-test of equality of variances is extremely sensitive to normality. In this section, the test will be conducted but it's results and conclusions won't be taken into account. Why? Because the distribution of datasets can't be considered normal in this case (because of strong left tails).
 
-$p\ -$ vjerojatnost da pod H0 dobijemo vrijednost koja je jednako ili više ekstremna nego vrijednost koji bi dobili izračunom iz uzorka kojeg imamo
+$p\ -$ probability that under the null hypothesis of obtaining the value (of the test statistic) that's as extreme (or more extreme) than the value we got computed from the sample we have
 
-Ako je $p < \alpha$, odbacujemo hipotezu $H0$ u korist hipoteze $H1$:
-
-* pada u desni ili lijevi rep => odbacivanje
+If $p < \alpha$ hypothesis $H0$ is rejected in favor of hypothesis $H1$ 
+* falls under right tail => rejection
 
 $$H_{0}: \sigma_{1}^{2}=\sigma_{2}^{2}$$
 $$H_{1}: \neg H_{0}$$
 
-Poredak argumenata za `var.test` nije bitna ali generalno vrijedi:
+Order of arguments for the `var.test` function doesn't matter. However, in practice, the numerator has the higher value than the denominator:
 $$\frac{\sigma_{1}^2}{\sigma_{2}^2},\quad\sigma_{1}^2 > \sigma_{2}^2$$
-
 
 
 ```{r, colapse=TRUE, echo=FALSE}
 # This part won't be outputed as code in PDF
 cat_reject_h0 <- function(prefix_message, is_h0_rejected) {
   cat(prefix_message, "\n")
-  if (is_h0_rejected) cat("\tOdbacujemo hipotezu H0 u korist hipoteze H1\n") else cat("\tNe odbacujemo hipotezu H0\n")
+  if (is_h0_rejected) cat("\tWe reject the hypothesis H0 in favor of hypothesis H1\n") else cat("\tWe do not reject the hypothesis H0\n")
 }
 ```
 
@@ -418,37 +409,40 @@ cat_reject_h0 <- function(prefix_message, is_h0_rejected) {
 cat("Mathematics variances", var(gp_mat$grade), var(ms_mat$grade))
 cat("Portugeuse variances", var(gp_por$grade), var(ms_por$grade))
 ```
-Na prvi pogled čini se da će H0 hipoteza za portugalski biti odbačena zbog toga što su varijance značajno drugačije. Potrebno je provesti f-test da se uvjerimo da se radi o statistički značajnoj razlici varijanci.
 
-Konstruirajmo i provedimo testove o varijanci:
+Intuitively, it can be assumed that the hypothesis H0 for Portuguese will be rejected because the variances are significantly different from each other. Of course, F-test of equality of variances has to be conducted to assure the statistical significance between the two variances.
+
+Construction of the test:
 ```{r, colapse=TRUE, results='hide'}
 alpha <- 0.05
 
 # H0 - Variance of GP_MAT and MS_MAT are equal
 # H1 - not H0
-mat_f_test <- var.test(gp_mat$grade, ms_mat$grade, alternative = "two.sided") # F = 1.0752, p = 0.817
+mat_f_test <- var.test(gp_mat$grade, ms_mat$grade, alternative = "two.sided")
+mat_f_test["p.value"]
 
 # H0 - Variance of GP_POR and MS_MAT are equal
 # H1 - not H0
-por_f_test <- var.test(gp_por$grade, ms_por$grade, alternative = "two.sided") # F = 0.30871, p = 1.217e-08
+por_f_test <- var.test(gp_por$grade, ms_por$grade, alternative = "two.sided")
+por_f_test["p.value"]
 ```
 
 ```{r, colapse=TRUE}
 var_equal_mat <- if (mat_f_test$p.value < alpha) FALSE else TRUE
-cat_reject_h0("Matematika - test o jednakosti varijanca:", !var_equal_mat)
+cat_reject_h0("Mathemathics - F-test of equality of variances:", !var_equal_mat)
 
 var_equal_por <- if (por_f_test$p.value < alpha) FALSE else TRUE
-cat_reject_h0("Portugalski - test o jednakosti varijanca:", !var_equal_por)
+cat_reject_h0("Portuguese - F-test of equality of variances:", !var_equal_por)
 ```
 
 
-## T-test - testiranje jednakosti srednje vrijednosti ocjena za dvije škole uz nepoznate varijance
+## T-test - unpaired two sample test of equal means
 
-Uz to što je `n` veći od 30 za oba podatkovna skupa i uz činjenicu da je t-test robustan na (ne)normalnost provodimo t-test srednje vrijednosti za oba predmeta.
+Because the `n` is bigger than 30 for both datasets and it true that t-test is robust to (non)normality, unpaired two sample test of equal means is conducted for both subjects.
 
-Zbog prethodno dobivenih srednje vrijednosti o ocjenama (koje idu u korist škole `GP`) postavljena je jednosmjerna alternativa hipoteza.
+With previously calculated means, one-sided alternative hypothesis is chosen (alternative that school `GP` has a higher mean) 
 
-Ponovno, zbog toga što test o varijanci nije robustan na nenormalnost pretpostaviti ćemo da vraijance uzoraka nisu jednake.
+Again, because of the sensitivity to normality (F-test of equality of variances) it's assumed that variances are unequal for the t-test.
 
 ```{r, collapse=TRUE}
 
@@ -456,20 +450,21 @@ Ponovno, zbog toga što test o varijanci nije robustan na nenormalnost pretposta
 # H1 - GP>MS
 mat_t_test <- t.test(gp_mat$grade, ms_mat$grade, alt = "greater", var.equal = FALSE)
 is_gp_mat_better <- if (mat_t_test$p.value < alpha) TRUE else FALSE
-cat_reject_h0("Matematika - t-test:", is_gp_mat_better)
+cat_reject_h0("Mathemathics - t-test:", is_gp_mat_better)
 
 # H0 - GP school has equal grades to in Portuguese to MS (GP=MS)
 # H1 - GP>MS
 por_t_test <- t.test(gp_por$grade, ms_por$grade, alt = "greater", var.equal = FALSE)
 is_gp_por_better <- if (por_t_test$p.value < alpha) TRUE else FALSE
-cat_reject_h0("Portugalski t-test:", is_gp_por_better)
+cat_reject_h0("Portugueuse - t-test:", is_gp_por_better)
 ```
 
-Za matematiku, nismo odbacili hipotezu H0 i zbog čega ne možemo zaključiti da škola GP ima bolje ocjene iz matematike od škole MS.
+Mathemathics - hypothesis H0 is not rejected. It can't be stated that school GP has better math grades than scchool MS
 
-Za portugalski, odbacujemo hipotezu H0 u korist hipoteze H1 i zaključujemo da je škola `GP` ima bolje ocjene iz portgualskog od škole `MS`.
+Portuguese - hypothesis H0 in favor of hypothesis H1 from which it's concluded that school `GP` has better grades in Portuguese than school `MS`.
 
-# Jesu li učenici uspješniji u matematici ili glavnom jeziku?
+# Are students more sucessfull in the mathematics or Portuguese?
+author: Matej Ciglenečki - advised by the rest of the group
 
 ```{r}
 students_org  %>% summarise(
