@@ -489,10 +489,9 @@ summary.result3
 
 ```
 
-Kao što je vidljivo iz podataka, učenici su malo uspješniji u glavnom jeziku (portugalskom), ali ako gleda prema samoj ocjeni obje skupine spadaju u ocjenu "C". Čak i ako uzmemo podrezanu srednju vrijednost (10%), rezultat se promijeni za ~1%.
+Portuguese grade's mean, median and trimmed mean (10%) is higher than mathemathic's
 
-
-```{r}
+```{r, echo=False,eval=FALSE}
 
 students_org  %>% summarise(
           IQR.G3_mat = IQR(G3_mat),
@@ -515,14 +514,9 @@ summary.result6
 
 ```
 
-Ako gledamo raspršenost varijabli vidimo da ocjene iz portugalskog jezika imaju manje sve tri mjere (IQR, varijanca i standardna devijacija) vidimo da se ocjene iz portugalskog manje manje odmiču od srednje vrijednosti nego ocjene iz matematike.
-
-
 ```{r, echo=FALSE}
 boxplot(students_org$G3_mat, students_org$G3_por, 
-        names = c('konačna ocjena iz matematike','konacna ocjena iz portugalskog'),
-        main='Boxplot konacnih ocjena iz matematike i portugala')
-
+        names = c('Mathemathics grade','Portugueuse grade'), ylab="Grade")
 ```
 
 ```{r, echo=FALSE}
