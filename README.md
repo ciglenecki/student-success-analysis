@@ -1,4 +1,6 @@
-# Student success analysis - 19.01.2022
+# Student success analysis
+
+[report.pdf](./report.pdf) is the final product
 
 # 📁 Directory structure
 
