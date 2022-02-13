@@ -22,7 +22,7 @@ library(nortest) # lilliefors test
 ```{r, include=FALSE}
 styler::style_dir() # Style the current file so it's well formated
 message("Your current working directory is: ", getwd())
-knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 80), tidy = TRUE)
+knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 100), tidy = TRUE)
 options(warn=-1)
 ```
 # Introduction
@@ -109,9 +109,10 @@ The Chi-square statistic is a non-parametric (distribution of the data doesn't m
 A test of independence assesses whether observations consisting of measures on two variables, expressed in a contingency table, are independent of each other (e.g. polling responses from people of different nationalities to see if one's nationality is related to the response).
 
 Chi-squared test assumptions:
-1. Sample size not less than 50 for a 2x2 contingency table - by using chi squared test on small samples, might end up committing a [Type II error](https://en.wikipedia.org/wiki/Type_I_and_type_II_errors#Type_II_error)
-2. Expected cell count should be 5 or more for 80% of the cells
-3. The observations are always assumed to be independent of each other 
+
+* Sample size not less than 50 for a 2x2 contingency table - by using chi squared test on small samples, might end up committing a [Type II error](https://en.wikipedia.org/wiki/Type_I_and_type_II_errors#Type_II_error)
+* Expected cell count should be 5 or more for 80% of the cells
+* The observations are always assumed to be independent of each other 
 
 
 First, transforming grades to the American grading system is performed:
@@ -325,7 +326,7 @@ ms_por <- students_final_grade %>%
 ```
 
 Columns will be renamed for easier usage.
-```{r, echo=FALSE, results='hide' }
+```{r, results='hide' }
 # Rename all columns to "grade"
 gp_mat <- gp_mat %>% rename(grade = G3_mat)
 gp_por <- gp_por %>% rename(grade = G3_por)
@@ -337,7 +338,6 @@ ms_por <- ms_por %>% rename(grade = G3_por)
 
 Graph shows relative frequencies and means (vertical dashed lines) in mathematics grade for each school. On each graph, means are compared and school with a higher mean (vertical line to the right) is taken as an alternative to the one-sided t-test. T-test will check a statistical significance between two means. 
 
-## Mathemathics - relative frequencies and mean
 ```{r, colapse=TRUE, echo=FALSE}
 # Plot mathemathics -- final grade
 ggplot(gp_mat, aes(x = grade, y = (..count.. / sum(..count..)))) +
@@ -347,10 +347,9 @@ ggplot(gp_mat, aes(x = grade, y = (..count.. / sum(..count..)))) +
   geom_vline(data = ms_mat, aes(xintercept = mean(grade), color = school), linetype = "dashed") +
   xlab("Grade") +
   ylab("Relative frequency") +
-  labs(title = "Mathematics - final grade for each school")
+  labs(title = "Mathematics - relative frequencies and mean")
 ```
 
-## Portuguese - relative frequencies and mean
 
 ```{r, colapse=TRUE, echo=FALSE}
 # Plot portug -- final grade
@@ -361,7 +360,7 @@ ggplot(gp_por, aes(x = grade, y = (..count.. / sum(..count..)))) +
   geom_vline(data = ms_por, aes(xintercept = mean(grade), color = school), linetype = "dashed") +
   xlab("Grade") +
   ylab("Relative frequency") +
-  labs(title = "Portuguese - final grade for each school")
+  labs(title = "Portuguese - relative frequencies and mean")
 ```
 On both graphs, we can see that `GP` school has higher a mean of grades in both subjects than `MS` school.
 
@@ -393,34 +392,43 @@ lillie.test(y)
 ```
 
 Normality can be check in multiple ways. In the following steps, two (2) methods are used:
+
 * visual (`qqnorm`)
 * quantitative decisions / tests (Lilliefors and Kolmogorov-Smirnov tests)
 ```{r, colapse=TRUE}
-nrow(gp_mat)
-nrow(gp_por)
-nrow(ms_mat)
-nrow(ms_por)
+nrow(gp_mat) # == nrow(gp_por)
+nrow(ms_mat) # == nrow(ms_por)
 ```
 `n` - size of the dataset for mathematics is `331` and `39` for Portuguese.
 
-```{r, colapse=TRUE, out.width="50%"}
+```{r, colapse=TRUE, echo=FALSE}
+par(mfrow=c(1,2))
+
 qqnorm(gp_mat$grade, pch = 1, frame = FALSE, main = "GP school mathemathics")
 qqline(gp_mat$grade)
-lillie.test(gp_mat$grade)["p.value"]
-ks.test(gp_mat$grade, "pnorm", mean(gp_mat$grade), sd(gp_mat$grade))["p.value"]
-
 qqnorm(gp_por$grade, pch = 1, frame = FALSE, main = "GP school Portuguese")
 qqline(gp_por$grade)
-lillie.test(gp_por$grade)["p.value"]
-ks.test(gp_por$grade, "pnorm", mean(gp_por$grade), sd(gp_por$grade))["p.value"]
 
 qqnorm(ms_mat$grade, pch = 1, frame = FALSE, main = "MS school mathemathics")
 qqline(ms_mat$grade)
+qqnorm(ms_por$grade, pch = 1, frame = FALSE, main = "MS school Portuguese")
+qqline(ms_por$grade)
+
+```
+
+```{r, colapse=TRUE}
+lillie.test(gp_mat$grade)["p.value"]
+ks.test(gp_mat$grade, "pnorm", mean(gp_mat$grade), sd(gp_mat$grade))["p.value"]
+
+
+lillie.test(gp_por$grade)["p.value"]
+ks.test(gp_por$grade, "pnorm", mean(gp_por$grade), sd(gp_por$grade))["p.value"]
+
+
 lillie.test(ms_mat$grade)["p.value"]
 ks.test(ms_mat$grade, "pnorm", mean(ms_mat$grade), sd(ms_mat$grade))["p.value"]
 
-qqnorm(ms_por$grade, pch = 1, frame = FALSE, main = "MS school Portuguese")
-qqline(ms_por$grade)
+
 lillie.test(ms_por$grade)["p.value"]
 ks.test(ms_por$grade, "pnorm", mean(ms_por$grade), sd(ms_por$grade))["p.value"]
 ```
@@ -581,7 +589,7 @@ hist(students_org$G3_por,
 ```
 
 Before the t-test, normality is checked visually and with Kolmogorov-Smirnov's and Lilliefors' test:
-```{r}
+```{r, echo=FALSE}
 qqnorm(students_org$G3_mat, pch = 1, frame = FALSE,main='Mathemathics')
 qqline(students_org$G3_mat, col = "steelblue", lwd = 2)
 qqnorm(students_org$G3_por, pch = 1, frame = FALSE,main='Portuguese')
@@ -589,13 +597,12 @@ qqline(students_org$G3_por, col = "steelblue", lwd = 2)
 ```
 
 ```{r}
-print('Mathemathics:')
-lillie.test(students_org$G3_mat)["p.value"]
-ks.test(students_org$G3_mat, "pnorm", mean(students_org$G3_mat), sd(students_org$G3_mat))["p.value"]
+cat("Mathemathics p-value (Lillie):", unlist(lillie.test(students_org$G3_mat)["p.value"]))
+cat('Mathemathics p-value (KS):', unlist(ks.test(students_org$G3_mat, "pnorm", mean(students_org$G3_mat), sd(students_org$G3_mat))["p.value"]))
 
-print('Portuguese:')
-lillie.test(students_org$G3_por)["p.value"]
-ks.test(students_org$G3_por, "pnorm", mean(students_org$G3_por), sd(students_org$G3_por))["p.value"]
+cat('Portuguese p-value (Lillie):', unlist(lillie.test(students_org$G3_por)["p.value"]))
+cat('Portuguese p-value (KS):', unlist(ks.test(students_org$G3_por, "pnorm", mean(students_org$G3_por), sd(students_org$G3_por))["p.value"]))
+
 ```
 Small p-values are the result of left tails. Visually we can see that in fact data comes from the normal distribution but with a strong remark that the left tail is often present. Although normality is assumed, tests that are sensitive to normality won't be taken into account.
 
@@ -749,9 +756,16 @@ students_org
 students_dummies=dummy_cols(students_org, remove_first_dummy = TRUE, remove_selected_columns = TRUE)
 students_dummies
 
-students_dummies$G_por_total <- students_dummies$G1_por + students_dummies$G2_por + students_dummies$G3_por
-students_dummies$G_mat_total <- students_dummies$G1_mat + students_dummies$G2_mat + students_dummies$G3_mat
-students_dummies$G_total <- students_dummies$G_por_total + students_dummies$G_mat_total
+students_dummies$G_por_total <- students_dummies$G1_por +
+  students_dummies$G2_por +
+  students_dummies$G3_por
+
+students_dummies$G_mat_total <- students_dummies$G1_mat +
+  students_dummies$G2_mat +
+  students_dummies$G3_mat
+
+students_dummies$G_total <- students_dummies$G_por_total +
+  students_dummies$G_mat_total
 
 ```
 

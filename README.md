@@ -1,7 +1,5 @@
 # Student success analysis - 19.01.2022
 
-**❗Tidyverse is core package for wrangling, filtering, visualizing and processing data. ❗**
-
 # 📁 Directory structure
 
 ### src
@@ -38,89 +36,20 @@ Linux - R installation (tidyverse requires these dependencies):
 ## Rmd
 hiding chunks https://bookdown.org/yihui/rmarkdown-cookbook/hide-one.html
 
-KS - if P = 1 that means that data surley come from same distribution
-if P = 0 then data comes from different distributions
+KS - if P = 1 that means that data surley come from same distribution. If P = 0 then data comes from different distributions
 
 # 📋 Todo:
+- [ ] spellcheck
+- [ ] write introduction to the problem
 
-- [x] Loading the dataset
-- [x] Describing the dataset
-- [ ] Handling missing values
-- [ ] Transforming nominal columns to nominal
-- [ ] Transforming binary columns to binary (?)
-- [ ] Filter missing values
-- [ ] 
-- [ ] 
-- [ ] ... add todos here ...
-- [ ]
-- [ ] 
-- [ ] 
-- [ ] 
-- [ ] 
-- [ ] Question (Matej): Does transport affect success
-- [ ] Question (Tomislav): Are students more successful in maths or the main subject?
-- [ ] Question (Matej): Which schools perform better than other schools in which subjects?
-  - [ ] Create a "matrix" of schools/subjects
-  - [ ] Later, you can sort for a specific subject, e.g. "Math" and check top 5 schools
-  - [ ] T test - pair
-  - [ ] KS test liliforce za normalizacijski test
-    - check for how many values is liliforce consistent. If your you have enough values use the test. If not, assume non-normality on data
-    - možemo ubaciti testove ali i dalje gledamo podatke kao ne-normalne 
-      - mozda izbaciti F test jer on nije robustan na nenormalne podatke
-    - pa zbog toga korsititi T test gdje su varijance nejednake
+# Contributors
 
 
-- [ ] Question (Magda): Which variable is the best predictor of success on a specific subject
-  - [ ] Later, create add top predicting variables for all subjects
-- [ ] Question (Petar): How does student's time put into studying result in the final grade? 
+<table>
+  <tr>
+    <td align="center"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Blank_square.svg/2048px-Blank_square.svg.png" width="100px;" alt=""/><br /><sub><b>Magda Radić</b></sub><br /></td>
+    <td align="center"><a href="https://github.com/tprhat"><img src="https://avatars.githubusercontent.com/u/33128908?v=4" width="100px;" alt=""/><br /><sub><b>Tomislav Prhat</b></sub></a><br /></td>
+    <td align="center"><a href="https://github.com/matejciglenecki"><img src="https://avatars.githubusercontent.com/u/12819849?v=4" width="100px;" alt=""/><br /><sub><b>Matej Ciglenečki</b></sub></a><br /></td>
+    <td align="center"><a href="https://github.com/pdragojevic"><img src="https://avatars.githubusercontent.com/u/76600733" width="100px;" alt=""/><br /><sub><b>Petar Dragojević</b></sub></a><br /></td>
 
-
-
-# Notes 20.01
-
-Predviđanje uspjeha - koje varijable najvise utjecu
-
-- G3_mat - uspjeh za mat
-- R^2 - koliko varijance u izlaznoj varijabli (G3_mat) objasnjava neka varijabla
-
-R^2 - veća vrijednost - to je bolji model, tj. više objašnjava vrijednosti (varijance)
-
-Pogledati detaljno R^2
-
-p-vrijednost u ovom kontesktu:
-- usporeduju se modeli medusobono na nacin da se izostavlja jedna varijabla
-- što je p niži to varijabla ima veći utjecaj
-- p - vjerojatnost da je ta varijabla nesignifikantna
-
-Multiple R-squared se povecava dodajemo nebitne varijable 
-
-Pretpostavka - reziduali moraju biti normalni
-- u nasem slucaju nisu 
-
-
-ANOVA
-- uzorci moraju biti izvuceni iz normalne distribucuje
-- moraju li svi podaci proizlaziti iz normalne distribucije (?)
-
-lm(students$G_total ~ students$traveltime)
-
-- regresor je students$traveltime (provjeriti jel to u redu naziv)
-- pogledati naziv za (students$G_total)
-
-
-model = lm(students$G_total ~ students$traveltime)
-
-summary(model)
-
-traveltime."15 - 30 min"
-traveltime."> 30 min"
-
-
-Detaljnije pogledati KS vs Lillie
-
-
-Pogledati kako K-squared Bartlett odjeđuje p
-
-Naučiti ANOVU (i ostalo)
-
-Provjeritit zasto su reziduali "neagtivni" (jesu li rezudiali uopce)
+</table>
