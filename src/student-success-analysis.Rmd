@@ -30,7 +30,6 @@ options(warn=-1)
 
 # Descriptive analyisis
 
-## Introduction
 Load the data, check dimension, columns, head and summary
 ```{r, colapse=TRUE}
 students_org <- readxl::read_excel("student_data.xlsx")
@@ -801,7 +800,7 @@ df_g_squares=data.frame(filtered_col_names, r_squares, ps)
 head(df_g_squares, n=3)
 ```
 
-## Predicting mathemathics success
+## Predicting student's success
 
 Which variables are the best predictors for `G_total`? Predictors are sorted by coefficient of determination $R^2 \in [0,1]$ a statistical measure that represents the proportion of the variance for a dependent variable (`G_total`) that's explained by an independent variable or variables in a regression model.
 
