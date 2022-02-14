@@ -49,7 +49,7 @@ The dataset includes answers to survey questions with grades in mathematics and 
 3. Run the first chunk in the file (Ctrl + Shift + Enter) which contains `library` functions
 4. Popup will open asking you to install the packets, press yes. This step takes **~20 minutes**
 
-## Notes:
+## 📝 Notes:
 - KS - if P = 1 that means that data surley come from same distribution. If P = 0 then data comes from different distributions
   
 ## 📋 Todo:

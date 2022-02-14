@@ -1,0 +1,350 @@
+---
+title: "Statistical Data Analysis - student success analyisis"
+author: "Matej Ciglenečki, Petar Dragojević, Magda Radić, Tomislav Prhat"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+
+
+
+Introduction
+
+
+Descriptive analyisis
+
+Load the data, check dimension, columns, head and summary
+
+
+
+
+
+
+Find what's the type of columns: numerical, chacaters...
+
+
+Checking for invalid data. For example, does the data exceed maximal value specified in the dataset documentation? (it doesn't)
+
+Values of each column do not exceed values specified in the dataset documentation 
+
+Removing NaN/NA/null values from the dataset. Luckily, there was no such values.
+
+
+
+
+
+(In)dependence between parent's education and students success
+
+author: Petar Dragojević - advised by the rest of the group
+
+Chi-squared test
+
+https://en.wikipedia.org/wiki/Pearson%27s_chi-squared_test 
+
+https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3900058/#:~:text=The%20assumptions%20of%20the%20Chi,the%20variables%20are%20mutually%20exclusive
+
+The Chi-square statistic is a non-parametric (distribution of the data doesn't matter) test designed to analyze group differences. It's applied to sets of categorical data to evaluate how likely it is that any observed difference between the sets arose by chance.
+
+A test of independence assesses whether observations consisting of measures on two variables, expressed in a contingency table, are independent of each other (e.g. polling responses from people of different nationalities to see if one's nationality is related to the response).
+
+Chi-squared test assumptions:
+
+* Sample size not less than 50 for a 2x2 contingency table - by using chi squared test on small samples, might end up committing a [Type II error](https://en.wikipedia.org/wiki/Type_I_and_type_II_errors#Type_II_error)
+* Expected cell count should be 5 or more for 80% of the cells
+* The observations are always assumed to be independent of each other 
+
+
+First, transforming grades to the American grading system is performed:
+
+
+Then father's and mother's education are grouped to the larger subgroups
+
+
+'Highest parent education' is defined as the maximum between father's and mother's education.
+
+
+
+
+
+
+---
+
+| Hypothesis | Description                                                         |
+| ---------- | ------------------------------------------------------------------- |
+| H0         | Mathemathics grade and highest parent education are independent     |
+| H1         | Mathemathics grade and highest parent education are not independent |
+
+
+p-value of the test is less than 0.05. We reject the H0 hypothesis in favor of H1 hypothesis and we conclude that **education of higher educated parent and mathematics grade are dependent attributes**.
+
+---
+
+| Hypothesis | Description                                                  |
+| ---------- | ------------------------------------------------------------ |
+| H0         | mathematics grade and mother's education are independent     |
+| H1         | mathematics grade and mother's education are not independent |
+
+
+p-value of the independence test is less than 0.05. Therefore, we reject the H0 hypothesis in favor of H1 hypothesis. Conclusion is drawn that **mother's education and mathematics grade are dependent.**
+
+---
+
+| Hypothesis | Description                                                  |
+| ---------- | ------------------------------------------------------------ |
+| H0         | mathematics grade and father's education are independent     |
+| H1         | mathematics grade and father's education are not independent |
+
+
+
+p-value of the independence test is higher than 0.05. Therefore, we do not reject the H0 hypothesis.
+
+---
+
+| Hypothesis | Description                                                       |
+| ---------- | ----------------------------------------------------------------- |
+| H0         | Portuguese grade and highest parent education are independent     |
+| H1         | Portuguese grade and highest parent education are not independent |
+
+
+
+p-value of the test is less than 0.05. We reject the H0 hypothesis in favor of H1 hypothesis and we conclude that education of higher educated parent and Portuguese grade are dependent attributes.
+
+Expected frequency for class (grade=A, education=1) 4.391753 could be problematic for Chi-square test of independence. However, the the assumption of the test is that expected frequency should be 5 or more **in at least 80%** of the cells. In which case, Fisher's exact test should be used since it's used for smaller sample sizes.
+
+---
+
+| Hypothesis | Description                                                 |
+| ---------- | ----------------------------------------------------------- |
+| H0         | Portuguese grade and mother's education are independent     |
+| H1         | Portuguese grade and mother's education are not independent |
+
+
+
+p-value of the independence test is less than 0.05. Therefore, we reject the H0 hypothesis in favor of H1 hypothesis. We conclude that mother's education and Portuguese grade are dependent.
+
+---
+
+| Hypothesis | Description                                                 |
+| ---------- | ----------------------------------------------------------- |
+| H0         | Portuguese grade and father's education are independent     |
+| H1         | Portuguese grade and father's education are not independent |
+
+
+There are 2 expected frequency whose value is less than 5. This is close to 80% of the 12 values which is why Fisher's exact test will be used in this case.
+
+
+
+p-value of the test is higher than 0.05. We do not reject the H0 hypothesis in favor of H1 hypothesis.
+
+Which school is better in matemathics and which in Portuguese?
+author: Matej Ciglenečki - advised by the rest of the group
+
+
+two (2) t-tests will be performed on four (4) different datasets. Dataset is split in four (4) different datasets (GP, MS) x (Mathematics, Portuguese): `gp_mat`, `gp_por`, `ms_mat`, `ms_por`
+
+Mean grades for each subject will be used to decide a direction (left or right) of one-sided t-test. School with higher mean grade will be in favor of alternative H1 hypothesis.
+
+
+
+
+Columns will be renamed for easier usage.
+
+
+Relative frequencies of subjects
+
+Graph shows relative frequencies and means (vertical dashed lines) in mathematics grade for each school. On each graph, means are compared and school with a higher mean (vertical line to the right) is taken as an alternative to the one-sided t-test. T-test will check a statistical significance between two means. 
+
+
+
+
+
+On both graphs, we can see that `GP` school has higher a mean of grades in both subjects than `MS` school.
+
+Normality
+
+
+
+Normality can be check in multiple ways. In the following steps, two (2) methods are used:
+
+* visual (`qqnorm`)
+* quantitative decisions / tests (Lilliefors and Kolmogorov-Smirnov tests)
+
+`n` - size of the dataset for mathematics is `331` and `39` for Portuguese.
+
+
+
+Tails are emphasized on the left side of the distribution, which is why the `p` value will almost always be less than 0.05 for the Kolmogovor-Smirnov and Lilliefors' test. 
+
+Visually we can see that in fact data comes from the normal distribution but with a strong remark that the left tail is often present. Although normality is assumed, tests that are sensitive to normality won't be taken into account.
+
+F-test of equality of variances
+
+It's important to emphasize that F-test of equality of variances is extremely sensitive to normality. In this section, the test will be conducted but it's results and conclusions won't be taken into account. Why? Because the distribution of datasets can't be considered normal in this case (because of strong left tails).
+
+$p\ -$ probability that under the null hypothesis of obtaining the value (of the test statistic) that's as extreme (or more extreme) than the value we got computed from the sample we have
+
+If $p < \alpha$ hypothesis $H0$ is rejected in favor of hypothesis $H1$ 
+* falls under right tail => rejection
+
+$$H_{0}: \sigma_{1}^{2}=\sigma_{2}^{2}$$
+$$H_{1}: \neg H_{0}$$
+
+Order of arguments for the `var.test` function doesn't matter. However, in practice, the numerator has the higher value than the denominator:
+$$\frac{\sigma_{1}^2}{\sigma_{2}^2},\quad\sigma_{1}^2 > \sigma_{2}^2$$
+
+Intuitively, it can be assumed that the H0 hypothesis for Portuguese will be rejected because the variances are significantly different from each other. Of course, F-test of equality of variances has to be conducted to assure the statistical significance between the two variances.
+
+Construction of the test:
+
+
+
+
+
+T-test - unpaired two sample test of equal means
+
+Because the `n` is bigger than 30 for both datasets and it true that t-test is robust to (non)normality, unpaired two sample test of equal means is conducted for both subjects.
+
+With previously calculated means, one-sided alternative hypothesis is chosen (alternative that school `GP` has a higher mean) 
+
+Again, because of the sensitivity to normality (F-test of equality of variances) it's assumed that variances are unequal for the t-test.
+
+
+
+Mathemathics - H0 hypothesis is not rejected. It can't be stated that school GP has better math grades than scchool MS
+
+Portuguese - H0 hypothesis in favor of H1 hypothesis from which it's concluded that school `GP` has better grades in Portuguese than school `MS`.
+
+Are students more sucessfull in the mathematics or Portuguese?
+author: Tomislav Prhat - advised by the rest of the group
+
+Portuguese grade's mean, median and trimmed mean (10%) is higher than mathemathic's
+
+
+
+
+
+
+Before the t-test, normality is checked visually and with Kolmogorov-Smirnov's and Lilliefors' test:
+
+
+Small p-values are the result of left tails. Visually we can see that in fact data comes from the normal distribution but with a strong remark that the left tail is often present. Although normality is assumed, tests that are sensitive to normality won't be taken into account.
+
+F-test of equality of variances
+
+Because of already mentioned extreme sensitivity to normality, theF-test of equality of variances will be conducted but it's results and conclusions won't be taken into account.
+
+$$H_{0}: \sigma_{1}^{2}=\sigma_{2}^{2}$$
+$$H_{1}: \neg H_{0}$$
+
+
+Because of the small p-value we reject the H0 hypothesis in favor of H1 hypothesis. Variances are different for each subject. 
+
+T-test for equality of grade means
+
+In both, alternative case will be that the higher grade is in Portuguese because of higher mean value compared to mathematics.
+
+
+
+
+How does travel time affect student's success?
+
+ANOVA will be performed to answer this question.
+
+ANOVA's assumptions are:
+* independence of sample cases
+* the population from which samples are drawn should be normally distributed
+* homogeneity of variance (variance among the groups should be approximately equal)
+
+H0 hypothesis - mean value of groups are equal
+$$H_{0}: \mu_{1}=\mu_{2}=\ldots=\mu_{k}$$
+$$H_{1}: \neg H_{0}$$
+
+We can assume independence because the schools are different. 
+
+If H0 hypothesis we conclude that mean values are unequal. In other words, we conclude that travel time affects the mean of student's grade (success).
+
+Categorical values
+
+Groups are be defined by the attribute `traveltime`. It's necessary to transform the values from attribute `traveltime` to categorical continuous data (factors with an order). `traveltime` attribute has 4 possible values which define the travel time from school to student's home:
+* `<` 15min
+* 15 - 30 min
+* 30 - 60 min
+* `>` 60 min
+
+Last category (60min+) will be merged with second to last category (30-60min) because only 8 data points are contained within the last group (60min+), which is significantly lower compared to the size of other groups.
+
+
+
+Term 'success' (G_total) is defined as sum of `G[1,2,3]_mat` i `G[1,2,3]_por` 
+
+
+
+ANOVA is robust to slight irregularities in normality. Nonetheless, normality for `G_total` will be tested for the whole dataset and then for each group independently.
+
+
+On the graph, it's visible that data is normally distributed with a few outliers (left tail). `p` value of the Lilliefors' test sometimes goes below 0.05, however, it's always above 0.05 for the Kolmogorov-Smirnov test.
+
+Lilliefors' test is used if variance and mean of the population is unknown, which is true for this dataset. It's known that Lilliefors is more conservative compared to Kolmogorov-Smirnov test, meanin that it's more likely to reject the H0 hypothesis.
+
+Taking everything into account, normality is assumed. Deviations from normality are small and `p` values that are bellow 0.05 are relatively close to 0.05.
+
+Homogeneity of variance - Bartlett's test 
+
+$$H_{0}: \sigma_{1}^{2}=\sigma_{2}^{2}=\ldots=\sigma_{k}^{2}$$
+$$H_{1}: \neg H_{0}$$
+
+
+Values of variances are similar. `p` value of the test is above 0.05 because of which H0 hypothesis is not rejected. With this, it's confirmed the dataset does not violate ANOVA's assumption for homogeneity of variances.
+
+ANOVA - Do groups have the same mean value?
+
+$$H_{0}: \mu_{1}=\mu_{2}=\ldots=\mu_{k}$$
+$$H_{1}: \neg H_{0}$$
+
+
+Visually, we can assume that travel time does affect student's success. However, it's necessary to perform the ANOVA test to confirm if the difference is statistically significant.
+
+
+
+ANOVA suggests that there is a difference between groups `traveltime`. Although the difference isn't enormous, the `p` (between `0.001` and `0.01`) value still suggests statistical significance. The conclusion follows: different `traveltime` groups have influence on student's success.
+
+Prediction of student's success with other variables
+author: Magda Radić - advised by the rest of the group
+
+First, categorical data is one-hot-encoded.
+
+
+Then, individual linear regressions are performed where `G3_mat` and `G3_por` are dependent variables and other variables are regressors. $R^2$ and p-values of the F-tests are saved to an array and will be used later to check which regressors give the minimum $R^2$ value.
+
+
+
+Predicting student's success
+
+Which variables are the best predictors for `G_total`? Predictors are sorted by coefficient of determination $R^2 \in [0,1]$ a statistical measure that represents the proportion of the variance for a dependent variable (`G_total`) that's explained by an independent variable or variables in a regression model.
+
+In this case, 10 best predictors are taken into a consideration (ranked by the $R^2$ value). After which, 
+
+
+
+From top 10 predictors it might be desirable to ditch one of the predictors which is highly correlated with another as they describe similar variability. Decision will be performed with visual and quantitative review of the correlation matrix. If there is any pair of predictors whose absolute correlation value is higher than 0.7, one of the predictors from the pair will be ditched. Preferably, it would be a predictor whose sum of absolute correlations coefficients with other predictors is higher than  
+
+
+All predictors will stay in the consideration since there isn't a pair of predictors whose absolute correlation value exceeds `0.7`. 
+
+
+Regressors that explain the most amount of variance within the student's success are times of failure for a subject. Those regressors might be a consequence of bad grades, not the cause. More non-obvious regressors are mother's education, frequency of going out (haning out with friends) and amount of time spent studying.
+
+Model will be further simplified so that it doesn't last two (2) regressors with highest p-values. Higher p-value indicate lower explanation of variance.
+
+
+The $R^2$ is smaller, however, the adjusted $R^2$ is higher compared the previous model which indicates that unnecessary regressors were discarded. This linear model represents the proportion of the variance (22.25%) for a dependent variable (`G_total`) that's explained by top 8 variables.
+
+Normality of residuals
+
+https://analyse-it.com/docs/user-guide/fit-model/linear/residual-normality#:~:text=Normality%20is%20the%20assumption%20that,normally%20distributed%2C%20or%20approximately%20so.&text=If%20the%20test%20p%2Dvalue,not%20from%20a%20normal%20distribution.
+
+> Violation of the normality of residuals assumption only becomes an issue with small sample sizes. For large sample sizes, the assumption is less important due to the central limit theorem, and the fact that the F and t-tests used for hypothesis tests and forming confidence intervals are robust to modest departures from normality.
+
+On graphs, it's visible that residuals are normally distributed.
