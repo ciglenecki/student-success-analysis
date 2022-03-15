@@ -54,7 +54,7 @@ The dataset includes answers to survey questions with grades in mathematics and 
   
 ## 📋 Todo:
 - [ ] spellcheck
-- [ ] write introduction to the problem
+- [x] write introduction to the problem
 
 ## 🏆 Team members
 
